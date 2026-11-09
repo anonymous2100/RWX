@@ -1,23 +1,22 @@
 package io.github.rwx.app
 
 import io.github.rwx.mod.registry.UiRegistry
-import io.github.rwx.render.frame.GameFrame
-import io.github.rwx.render.frame.GameViewport
+import io.github.rwx.geometry.Viewport
 import io.github.rwx.ui.AppScreen
 import io.github.rwx.ui.AppScreenLayout
 import io.github.rwx.ui.InGameOverlayState
 
 internal class ScreenPresenter(
     private val bootstrap: AppBootstrap,
-    private val viewport: () -> GameViewport,
+    private val viewport: () -> Viewport,
 ) {
     var battleBackgroundVisible: Boolean = false
         private set
     private var inGameOverlay: InGameOverlayState? = null
 
-    fun updateInGameOverlay(state: InGameOverlayState?, screen: AppScreen, lastExternalGameFrame: GameFrame?) {
+    fun updateInGameOverlay(state: InGameOverlayState?, screen: AppScreen) {
         inGameOverlay = state
-        if (screen == AppScreen.InGame) apply(screen, lastExternalGameFrame)
+        if (screen == AppScreen.InGame) apply(screen)
     }
 
     fun shouldShowBackgroundBattle(screen: AppScreen): Boolean =
@@ -26,10 +25,7 @@ internal class ScreenPresenter(
                 bootstrap.menuBackgroundSession.isMenuBackgroundActive() &&
                 !bootstrap.gameSession.canResume()
 
-    fun apply(
-        screen: AppScreen,
-        lastExternalGameFrame: GameFrame?,
-    ) {
+    fun apply(screen: AppScreen) {
         val isBackgroundBattlePreparing = ensureBackgroundBattle(screen)
         val gameSession = bootstrap.gameSession
         val visibility = AppScreenLayout.visibilityFor(screen)
@@ -50,19 +46,15 @@ internal class ScreenPresenter(
             usesFrameCommandRendering = gameSession.usesFrameCommandRendering,
             usesNativeSurfaceForResumeBackground = gameSession.usesNativeSurfaceForResumeBackground,
         ) || (isBackgroundBattlePreparing && !gameSession.usesFrameCommandRendering)
-        val isLastExternalFrameBackgroundVisible = supportsBackgroundBattle(screen) &&
-                !gameSession.usesFrameCommandRendering &&
-                lastExternalGameFrame != null
         val isBattleBackgroundVisible = isBackgroundBattleVisible ||
-                isResumeBackgroundVisible ||
-                isLastExternalFrameBackgroundVisible
+                isResumeBackgroundVisible
 
         battleBackgroundVisible = isBattleBackgroundVisible
         bootstrap.mainMenuSceneHost.setBattleBackgroundVisible(isBattleBackgroundVisible)
 
         bootstrap.settingsSceneHost.setActive(visibility.settings)
         gameSession.setGameVisible(
-            shouldSetRwGameVisibleForScreen(screen) || isExternalRwBackgroundVisible,
+            screen == AppScreen.InGame || isExternalRwBackgroundVisible,
             viewport(),
             uiOverlay = isExternalRwBackgroundVisible ||
                     isExternalModWindowOverlayVisible ||

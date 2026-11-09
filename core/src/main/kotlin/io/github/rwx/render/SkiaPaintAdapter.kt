@@ -7,7 +7,7 @@ import io.github.rwx.render.canvas.ColorFilter
 import io.github.rwx.render.canvas.MultiplyAddColorFilter
 import io.github.rwx.render.canvas.Paint
 import io.github.rwx.render.canvas.resolvedPaintColor
-import io.github.rwx.render.frame.GameCanvasBlendMode
+import io.github.rwx.render.canvas.CanvasBlendMode
 import org.jetbrains.skia.BlendMode
 import org.jetbrains.skia.ColorFilter as SkiaColorFilter
 import org.jetbrains.skia.Paint as SkiaPaint
@@ -99,7 +99,7 @@ internal class SkiaPaintAdapter : AutoCloseable {
 
     private fun createColorFilter(filter: ColorFilter?, imageTint: Int): SkiaColorFilter? {
         // Multiply filters are already folded into resolvedPaintColor().
-        val blendFilter = if (filter is BlendColorFilter && filter.blendMode != GameCanvasBlendMode.Multiply) {
+        val blendFilter = if (filter is BlendColorFilter && filter.blendMode != CanvasBlendMode.Multiply) {
             SkiaColorFilter.makeBlend(filter.color, filter.blendMode.toSkia())
         } else null
         if (imageTint == -1) return blendFilter
@@ -116,22 +116,22 @@ internal class SkiaPaintAdapter : AutoCloseable {
     }
 }
 
-internal fun GameCanvasBlendMode.toSkia(): BlendMode = when (this) {
-    GameCanvasBlendMode.SourceOver -> BlendMode.SRC_OVER
+internal fun CanvasBlendMode.toSkia(): BlendMode = when (this) {
+    CanvasBlendMode.SourceOver -> BlendMode.SRC_OVER
     // Premultiplied surfaces cannot retain visible RGB with zero alpha.
-    GameCanvasBlendMode.Clear, GameCanvasBlendMode.ClearAlpha -> BlendMode.CLEAR
-    GameCanvasBlendMode.Source -> BlendMode.SRC
-    GameCanvasBlendMode.Destination -> BlendMode.DST
-    GameCanvasBlendMode.SourceIn -> BlendMode.SRC_IN
-    GameCanvasBlendMode.SourceOut -> BlendMode.SRC_OUT
-    GameCanvasBlendMode.SourceAtop -> BlendMode.SRC_ATOP
-    GameCanvasBlendMode.DestinationOver -> BlendMode.DST_OVER
-    GameCanvasBlendMode.DestinationIn -> BlendMode.DST_IN
-    GameCanvasBlendMode.DestinationOut -> BlendMode.DST_OUT
-    GameCanvasBlendMode.DestinationAtop -> BlendMode.DST_ATOP
-    GameCanvasBlendMode.Xor -> BlendMode.XOR
-    GameCanvasBlendMode.Add -> BlendMode.PLUS
-    GameCanvasBlendMode.Multiply -> BlendMode.MULTIPLY
-    GameCanvasBlendMode.Screen -> BlendMode.SCREEN
-    GameCanvasBlendMode.Overlay -> BlendMode.OVERLAY
+    CanvasBlendMode.Clear, CanvasBlendMode.ClearAlpha -> BlendMode.CLEAR
+    CanvasBlendMode.Source -> BlendMode.SRC
+    CanvasBlendMode.Destination -> BlendMode.DST
+    CanvasBlendMode.SourceIn -> BlendMode.SRC_IN
+    CanvasBlendMode.SourceOut -> BlendMode.SRC_OUT
+    CanvasBlendMode.SourceAtop -> BlendMode.SRC_ATOP
+    CanvasBlendMode.DestinationOver -> BlendMode.DST_OVER
+    CanvasBlendMode.DestinationIn -> BlendMode.DST_IN
+    CanvasBlendMode.DestinationOut -> BlendMode.DST_OUT
+    CanvasBlendMode.DestinationAtop -> BlendMode.DST_ATOP
+    CanvasBlendMode.Xor -> BlendMode.XOR
+    CanvasBlendMode.Add -> BlendMode.PLUS
+    CanvasBlendMode.Multiply -> BlendMode.MULTIPLY
+    CanvasBlendMode.Screen -> BlendMode.SCREEN
+    CanvasBlendMode.Overlay -> BlendMode.OVERLAY
 }

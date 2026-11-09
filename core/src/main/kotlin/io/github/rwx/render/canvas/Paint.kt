@@ -1,7 +1,5 @@
 package io.github.rwx.render.canvas
 
-import io.github.rwx.render.frame.*
-
 import io.github.rwx.geometry.Rect
 import java.util.*
 import kotlin.math.abs
@@ -10,7 +8,7 @@ import kotlin.math.ceil
 open class Paint {
     private var r: ColorFilter? = null
     private var w: Typeface? = null
-    private var x: GameCanvasBlendMode? = null
+    private var x: CanvasBlendMode? = null
     private var y: Boolean = false
     private var z: Float = 1f
     private var A: Float = 1f
@@ -247,7 +245,7 @@ open class Paint {
 
     open fun h(): ColorFilter? = r
 
-    fun getBlendMode(): GameCanvasBlendMode? = x
+    fun getBlendMode(): CanvasBlendMode? = x
 
     open fun a(colorFilter: ColorFilter?): ColorFilter? {
         if (r !== colorFilter) {
@@ -257,7 +255,7 @@ open class Paint {
         return colorFilter
     }
 
-    open fun a(blendMode: GameCanvasBlendMode?): GameCanvasBlendMode? {
+    open fun a(blendMode: CanvasBlendMode?): CanvasBlendMode? {
         if (x != blendMode) {
             x = blendMode
             markStateChanged()

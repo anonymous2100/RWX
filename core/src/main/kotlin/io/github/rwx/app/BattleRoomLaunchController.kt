@@ -8,7 +8,7 @@ import io.github.rwx.map.MapLinkResolver
 import io.github.rwx.p2p.FeatureIds
 import io.github.rwx.p2p.MapFeatureDetector
 import io.github.rwx.p2p.P2PLobbyService
-import io.github.rwx.render.frame.GameViewport
+import io.github.rwx.geometry.Viewport
 import io.github.rwx.session.BattleRoomLaunchConfig
 import io.github.rwx.session.BattleRoomSnapshot
 import io.github.rwx.session.GameSession
@@ -19,7 +19,7 @@ import io.github.rwx.ui.BattleRoomUiBridge
 internal class BattleRoomLaunchController(
     private val gameSession: GameSession,
     private val storage: () -> PlatformStorage?,
-    private val viewport: () -> GameViewport,
+    private val viewport: () -> Viewport,
     private val currentScreen: () -> AppScreen,
     private val enterRwGame: (Boolean, BattleRoomLaunchConfig?) -> Unit,
     private val clearPendingRwStartState: () -> Unit,

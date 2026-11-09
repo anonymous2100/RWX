@@ -23,6 +23,7 @@ import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import io.github.rwx.app.AppAction
 import io.github.rwx.app.AppSession
 import io.github.rwx.ui.component.AppDialog
 import io.github.rwx.ui.component.AppLoadingDialog
@@ -85,19 +86,48 @@ class AndroidComposeOverlay(
             val snapshot by state.collectAsState()
             AndroidOverlayContent(
                 state = snapshot,
-                onMenuAction = { session?.dispatchMenuAction(it) },
-                onSettingsAction = { session?.dispatchSettingsAction(it) },
-                onBack = { session?.dispatchUiBack() },
-                onLevelSelectAction = { revision, action -> session?.dispatchLevelSelectAction(revision, action) },
-                onPauseAction = { session?.dispatchPauseAction(it) },
-                onMultiplayerAction = { kind, revision, action -> session?.dispatchMultiplayerAction(kind, revision, action) },
-                onBattleRoomAction = { revision, action -> session?.dispatchBattleRoomAction(revision, action) },
-                onDialogAction = { revision, action -> session?.dispatchDialogAction(revision, action) },
-                onLoadingCancel = { session?.dispatchLoadingCancel(it) },
-                onModsAction = { revision, action -> session?.dispatchModsAction(revision, action) },
-                onResourceBrowserAction = { revision, action -> session?.dispatchResourceBrowserAction(revision, action) },
-                onReplaySelectAction = { revision, action -> session?.dispatchReplaySelectAction(revision, action) },
-                onModWindowAction = { revision, action -> session?.dispatchModWindowAction(revision, action) },
+                onMenuAction = { session?.dispatch(AppAction.Menu(it)) },
+                onSettingsAction = { session?.dispatch(AppAction.Settings(it)) },
+                onBack = { session?.dispatch(AppAction.Back) },
+                onLevelSelectAction = { revision, action ->
+                    session?.dispatch(
+                        AppAction.LevelSelect(
+                            revision,
+                            action
+                        )
+                    )
+                },
+                onPauseAction = { session?.dispatch(AppAction.Pause(it)) },
+                onMultiplayerAction = { kind, revision, action ->
+                    session?.dispatch(
+                        AppAction.Multiplayer(
+                            kind,
+                            revision,
+                            action
+                        )
+                    )
+                },
+                onBattleRoomAction = { revision, action -> session?.dispatch(AppAction.BattleRoom(revision, action)) },
+                onDialogAction = { revision, action -> session?.dispatch(AppAction.Dialog(revision, action)) },
+                onLoadingCancel = { session?.dispatch(AppAction.LoadingCancel(it)) },
+                onModsAction = { revision, action -> session?.dispatch(AppAction.Mods(revision, action)) },
+                onResourceBrowserAction = { revision, action ->
+                    session?.dispatch(
+                        AppAction.ResourceBrowser(
+                            revision,
+                            action
+                        )
+                    )
+                },
+                onReplaySelectAction = { revision, action ->
+                    session?.dispatch(
+                        AppAction.ReplaySelect(
+                            revision,
+                            action
+                        )
+                    )
+                },
+                onModWindowAction = { revision, action -> session?.dispatch(AppAction.ModWindow(revision, action)) },
             )
         }
         scope.launch {

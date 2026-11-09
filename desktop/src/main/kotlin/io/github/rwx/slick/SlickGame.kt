@@ -19,7 +19,7 @@ import io.github.rwx.input.MultiTouchPointerState
 import io.github.rwx.logger
 import io.github.rwx.net.CoreUiNetworkCallbacks
 import io.github.rwx.platform.CoreGameView
-import io.github.rwx.render.frame.GameViewport
+import io.github.rwx.geometry.Viewport
 import com.corrodinggames.rts.gameFramework.graphics.GraphicsEngine
 import io.github.rwx.session.*
 import io.github.rwx.ui.InGameMenuController
@@ -262,7 +262,7 @@ class SlickGame(
         GameEngine.graphicsEngine = graphicsEngine
         GameEngine.externalGameLoopDriver = true
         val activeEngine = gameSession.ensureRendererEngine(
-            viewport = GameViewport(container.width, container.height),
+            viewport = Viewport(container.width, container.height),
             graphicsEngine = graphicsEngine,
             view = view,
             platformCallbacks = SlickLoadingCallbacks(onLoadingStatus),

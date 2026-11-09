@@ -8,7 +8,6 @@ import io.github.rwx.PlatformStorage
 import io.github.rwx.geometry.Rect
 import io.github.rwx.geometry.RectF
 import io.github.rwx.render.canvas.*
-import io.github.rwx.render.frame.*
 import org.lwjgl.BufferUtils
 import org.lwjgl.opengl.GL11
 import org.lwjgl.opengl.GL12
@@ -319,14 +318,14 @@ class SlickGraphicsEngine private constructor(
         g.clear()
     }
 
-    override fun a(i: Int, mode: GameCanvasBlendMode?) {
+    override fun a(i: Int, mode: CanvasBlendMode?) {
         when (mode) {
-            GameCanvasBlendMode.Clear -> {
+            CanvasBlendMode.Clear -> {
                 b(i)
                 runCatching { activeGraphics()?.clearAlphaMap() }
             }
 
-            GameCanvasBlendMode.ClearAlpha -> {
+            CanvasBlendMode.ClearAlpha -> {
                 runCatching { activeGraphics()?.clearAlphaMap() }
             }
 
@@ -1154,10 +1153,10 @@ class SlickGraphicsEngine private constructor(
 
     private fun slickBlendModeForPaint(paint: Paint?): SlickBlendMode? {
         when (paint?.getBlendMode()) {
-            GameCanvasBlendMode.Source -> return SlickBlendMode.Source
-            GameCanvasBlendMode.Add -> return SlickBlendMode.Add
-            GameCanvasBlendMode.Multiply -> return SlickBlendMode.Multiply
-            GameCanvasBlendMode.Screen -> return SlickBlendMode.Screen
+            CanvasBlendMode.Source -> return SlickBlendMode.Source
+            CanvasBlendMode.Add -> return SlickBlendMode.Add
+            CanvasBlendMode.Multiply -> return SlickBlendMode.Multiply
+            CanvasBlendMode.Screen -> return SlickBlendMode.Screen
             else -> Unit
         }
         return when (val filter = paint?.h()) {

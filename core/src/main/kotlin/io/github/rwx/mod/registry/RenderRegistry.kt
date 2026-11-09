@@ -14,7 +14,7 @@ import io.github.rwx.geometry.Rect
 import io.github.rwx.geometry.RectF
 import io.github.rwx.mod.api.*
 import io.github.rwx.mod.impl.ApiImpl
-import io.github.rwx.render.frame.GameCanvasBlendMode
+import io.github.rwx.render.canvas.CanvasBlendMode
 import io.github.rwx.render.canvas.Paint
 import java.util.*
 import kotlin.math.abs
@@ -406,8 +406,8 @@ object RenderRegistry : OwnedRegistry {
             )
             paint.a(
                 when (blendMode) {
-                    RenderBlendMode.ALPHA -> GameCanvasBlendMode.SourceOver
-                    RenderBlendMode.ADDITIVE -> GameCanvasBlendMode.Add
+                    RenderBlendMode.ALPHA -> CanvasBlendMode.SourceOver
+                    RenderBlendMode.ADDITIVE -> CanvasBlendMode.Add
                 }
             )
             source.a(0, 0, texture.width(), texture.height())
@@ -442,8 +442,8 @@ object RenderRegistry : OwnedRegistry {
             )
             paint.a(
                 when (blendMode) {
-                    RenderBlendMode.ALPHA -> GameCanvasBlendMode.SourceOver
-                    RenderBlendMode.ADDITIVE -> GameCanvasBlendMode.Add
+                    RenderBlendMode.ALPHA -> CanvasBlendMode.SourceOver
+                    RenderBlendMode.ADDITIVE -> CanvasBlendMode.Add
                 }
             )
             val left = (source.left * texture.width()).roundToInt().coerceIn(0, texture.width() - 1)
@@ -521,8 +521,8 @@ object RenderRegistry : OwnedRegistry {
             paint.a(strokeWidth)
             paint.a(
                 when (blendMode) {
-                    RenderBlendMode.ALPHA -> GameCanvasBlendMode.SourceOver
-                    RenderBlendMode.ADDITIVE -> GameCanvasBlendMode.Add
+                    RenderBlendMode.ALPHA -> CanvasBlendMode.SourceOver
+                    RenderBlendMode.ADDITIVE -> CanvasBlendMode.Add
                 }
             )
         }

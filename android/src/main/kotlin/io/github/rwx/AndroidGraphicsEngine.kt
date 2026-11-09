@@ -17,8 +17,7 @@ import com.corrodinggames.rts.gameFramework.utility.AssetInputStream
 import io.github.rwx.geometry.Rect
 import io.github.rwx.geometry.RectF
 import io.github.rwx.render.canvas.*
-import io.github.rwx.render.frame.GameCanvasBlendMode
-import io.github.rwx.logger
+import io.github.rwx.render.canvas.CanvasBlendMode
 import java.io.File
 import java.io.InputStream
 import java.util.*
@@ -318,8 +317,8 @@ internal class AndroidGraphicsEngine(
         graphicsContext.b(i)
     }
 
-    override fun a(i: Int, mode: GameCanvasBlendMode?) {
-        if (mode == GameCanvasBlendMode.Clear || mode == GameCanvasBlendMode.ClearAlpha) {
+    override fun a(i: Int, mode: CanvasBlendMode?) {
+        if (mode == CanvasBlendMode.Clear || mode == CanvasBlendMode.ClearAlpha) {
             graphicsContext.a(PorterDuff.Mode.CLEAR)
         } else {
             graphicsContext.b(i)
@@ -832,10 +831,10 @@ internal class AndroidGraphicsEngine(
 
         fun io.github.rwx.render.canvas.Paint.toAndroidOpenGlBlendMode(): Int {
             when (getBlendMode()) {
-                GameCanvasBlendMode.Source -> return BlendPaint.BLEND_SOURCE
-                GameCanvasBlendMode.Add -> return BlendPaint.BLEND_ADD
-                GameCanvasBlendMode.Multiply -> return BlendPaint.BLEND_MULTIPLY
-                GameCanvasBlendMode.Screen -> return BlendPaint.BLEND_SCREEN
+                CanvasBlendMode.Source -> return BlendPaint.BLEND_SOURCE
+                CanvasBlendMode.Add -> return BlendPaint.BLEND_ADD
+                CanvasBlendMode.Multiply -> return BlendPaint.BLEND_MULTIPLY
+                CanvasBlendMode.Screen -> return BlendPaint.BLEND_SCREEN
                 else -> Unit
             }
             return when (val filter = colorFilter()) {
@@ -853,44 +852,44 @@ internal class AndroidGraphicsEngine(
             }
         }
 
-        fun io.github.rwx.render.canvas.Paint.toAndroidCanvasBlendMode(): GameCanvasBlendMode =
+        fun io.github.rwx.render.canvas.Paint.toAndroidCanvasBlendMode(): CanvasBlendMode =
             getBlendMode() ?: when (val filter = colorFilter()) {
                 is TeamColorFilter ->
                     when (filter.a) {
-                        BlendMode.copy -> GameCanvasBlendMode.Source
-                        BlendMode.additive -> GameCanvasBlendMode.Add
-                        else -> GameCanvasBlendMode.SourceOver
+                        BlendMode.copy -> CanvasBlendMode.Source
+                        BlendMode.additive -> CanvasBlendMode.Add
+                        else -> CanvasBlendMode.SourceOver
                     }
 
-                else -> GameCanvasBlendMode.SourceOver
+                else -> CanvasBlendMode.SourceOver
             }
 
-        fun canvasXfermode(mode: GameCanvasBlendMode): PorterDuffXfermode? =
-            if (mode == GameCanvasBlendMode.SourceOver) {
+        fun canvasXfermode(mode: CanvasBlendMode): PorterDuffXfermode? =
+            if (mode == CanvasBlendMode.SourceOver) {
                 null
             } else {
                 PorterDuffXfermode(mode.toPorterDuffMode())
             }
 
-        fun GameCanvasBlendMode.toPorterDuffMode(): PorterDuff.Mode =
+        fun CanvasBlendMode.toPorterDuffMode(): PorterDuff.Mode =
             when (this) {
-                GameCanvasBlendMode.Clear,
-                GameCanvasBlendMode.ClearAlpha -> PorterDuff.Mode.CLEAR
+                CanvasBlendMode.Clear,
+                CanvasBlendMode.ClearAlpha -> PorterDuff.Mode.CLEAR
 
-                GameCanvasBlendMode.Source -> PorterDuff.Mode.SRC
-                GameCanvasBlendMode.Destination -> PorterDuff.Mode.DST
-                GameCanvasBlendMode.SourceIn -> PorterDuff.Mode.SRC_IN
-                GameCanvasBlendMode.SourceOut -> PorterDuff.Mode.SRC_OUT
-                GameCanvasBlendMode.SourceAtop -> PorterDuff.Mode.SRC_ATOP
-                GameCanvasBlendMode.DestinationOver -> PorterDuff.Mode.DST_OVER
-                GameCanvasBlendMode.DestinationIn -> PorterDuff.Mode.DST_IN
-                GameCanvasBlendMode.DestinationOut -> PorterDuff.Mode.DST_OUT
-                GameCanvasBlendMode.DestinationAtop -> PorterDuff.Mode.DST_ATOP
-                GameCanvasBlendMode.Xor -> PorterDuff.Mode.XOR
-                GameCanvasBlendMode.Add -> PorterDuff.Mode.ADD
-                GameCanvasBlendMode.Multiply -> PorterDuff.Mode.MULTIPLY
-                GameCanvasBlendMode.Screen -> PorterDuff.Mode.SCREEN
-                GameCanvasBlendMode.Overlay -> PorterDuff.Mode.OVERLAY
+                CanvasBlendMode.Source -> PorterDuff.Mode.SRC
+                CanvasBlendMode.Destination -> PorterDuff.Mode.DST
+                CanvasBlendMode.SourceIn -> PorterDuff.Mode.SRC_IN
+                CanvasBlendMode.SourceOut -> PorterDuff.Mode.SRC_OUT
+                CanvasBlendMode.SourceAtop -> PorterDuff.Mode.SRC_ATOP
+                CanvasBlendMode.DestinationOver -> PorterDuff.Mode.DST_OVER
+                CanvasBlendMode.DestinationIn -> PorterDuff.Mode.DST_IN
+                CanvasBlendMode.DestinationOut -> PorterDuff.Mode.DST_OUT
+                CanvasBlendMode.DestinationAtop -> PorterDuff.Mode.DST_ATOP
+                CanvasBlendMode.Xor -> PorterDuff.Mode.XOR
+                CanvasBlendMode.Add -> PorterDuff.Mode.ADD
+                CanvasBlendMode.Multiply -> PorterDuff.Mode.MULTIPLY
+                CanvasBlendMode.Screen -> PorterDuff.Mode.SCREEN
+                CanvasBlendMode.Overlay -> PorterDuff.Mode.OVERLAY
                 else -> PorterDuff.Mode.SRC_OVER
             }
     }

@@ -294,7 +294,7 @@ public final class Effect {
         this.endColor = -1;
         this.endColorTransitionTime = -1.0f;
         this.colorPaint.a((ColorFilter) null);
-        this.colorPaint.a((io.github.rwx.render.frame.GameCanvasBlendMode) null);
+        this.colorPaint.a((CanvasBlendMode) null);
         this.hasColorFilterApplied = false;
         this.colorPaint.a((DisplacementEffect) null);
         this.colorPaint.a((ShaderProgram) null);

@@ -10,7 +10,7 @@ import io.github.rwx.di.desktopModule
 import io.github.rwx.i18n.LocaleSettings
 import io.github.rwx.logger
 import io.github.rwx.render.canvas.GameFontMetrics
-import io.github.rwx.render.frame.GameViewport
+import io.github.rwx.geometry.Viewport
 import io.github.rwx.session.GameSession
 import org.koin.core.context.GlobalContext
 import org.koin.dsl.module
@@ -32,7 +32,7 @@ internal object HeadlessDesktopRunner {
                 val hook = Thread({ stopping.set(true); session.close() }, "headless-desktop-shutdown")
                 Runtime.getRuntime().addShutdownHook(hook)
                 try {
-                    val viewport = GameViewport(640, 480)
+                    val viewport = Viewport(640, 480)
                     session.preload(viewport)
                     val replay = options.autoReplay
                     val server = options.joinServer

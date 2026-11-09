@@ -11,7 +11,7 @@ import com.corrodinggames.rts.gameFramework.graphics.Texture;
 import com.corrodinggames.rts.gameFramework.utility.GameViewUtils;
 import com.corrodinggames.rts.gameFramework.utility.IniFile;
 import io.github.rwx.render.canvas.ArgbColor;
-import io.github.rwx.render.frame.GameCanvasBlendMode;
+import io.github.rwx.render.canvas.CanvasBlendMode;
 import io.github.rwx.render.canvas.MultiplyAddColorFilter;
 
 import java.util.ArrayList;
@@ -71,7 +71,7 @@ public class EffectTemplate {
     public MultiplyAddColorFilter cachedMultiplyAddColorFilter;
     public float teamColorRatio;
     public boolean shadow;
-    public GameCanvasBlendMode blendMode;
+    public CanvasBlendMode blendMode;
     public float imageAnchorY;
     public short drawLayer;
     public float fadeInTime;
@@ -429,7 +429,7 @@ public class EffectTemplate {
         if (blendModeName.equalsIgnoreCase("alpha")) {
             this.blendMode = null;
         } else if (blendModeName.equalsIgnoreCase("additive")) {
-            this.blendMode = GameCanvasBlendMode.Add;
+            this.blendMode = CanvasBlendMode.Add;
         } else {
             throw new ConfigParseException("Unknown blendMode: " + blendModeName);
         }

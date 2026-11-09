@@ -6,7 +6,7 @@ import com.corrodinggames.rts.gameFramework.graphics.RenderTargetMode;
 import com.corrodinggames.rts.gameFramework.graphics.Texture;
 import io.github.rwx.geometry.Rect;
 import io.github.rwx.render.canvas.ArgbColor;
-import io.github.rwx.render.frame.GameCanvasBlendMode;
+import io.github.rwx.render.canvas.CanvasBlendMode;
 import io.github.rwx.render.canvas.Paint;
 
 /* JADX INFO: renamed from: com.corrodinggames.rts.game.b.h */
@@ -131,7 +131,7 @@ public class TileAtlasCache {
     public void clearAtlas() {
         this.allocatedSlotCount = 0;
         if (this.isAlphaAtlas) {
-            this.atlasGraphics.a(0, GameCanvasBlendMode.Clear);
+            this.atlasGraphics.a(0, CanvasBlendMode.Clear);
         } else {
             this.atlasGraphics.b(-16777216);
         }

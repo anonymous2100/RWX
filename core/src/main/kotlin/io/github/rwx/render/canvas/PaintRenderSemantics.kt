@@ -1,7 +1,5 @@
 package io.github.rwx.render.canvas
 
-import io.github.rwx.render.frame.*
-
 fun Int.applyColorFilter(colorFilter: ColorFilter?): Int =
     when (colorFilter) {
         is MultiplyAddColorFilter ->
@@ -50,7 +48,7 @@ private fun Int.applyMultiplyAddColorFilter(colorFilter: MultiplyAddColorFilter)
 
 private fun Int.applyBlendColorFilter(colorFilter: BlendColorFilter): Int =
     when (colorFilter.blendMode) {
-        GameCanvasBlendMode.Multiply -> argb(
+        CanvasBlendMode.Multiply -> argb(
             alpha = alphaComponent,
             red = multiplyChannel(redComponent, colorFilter.color.redComponent),
             green = multiplyChannel(greenComponent, colorFilter.color.greenComponent),

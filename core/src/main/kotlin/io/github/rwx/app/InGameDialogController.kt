@@ -4,7 +4,7 @@ import com.corrodinggames.rts.gameFramework.local.Locale
 import io.github.rwx.i18n.I18n
 import io.github.rwx.logger
 import io.github.rwx.mod.registry.UiRegistry
-import io.github.rwx.render.frame.GameViewport
+import io.github.rwx.geometry.Viewport
 import io.github.rwx.session.GameSession
 import io.github.rwx.ui.AppScreen
 import io.github.rwx.ui.CoreUiEvent
@@ -20,7 +20,7 @@ internal class InGameDialogController(
     private val dialogSceneHost: DialogSceneHost,
     private val loadingDialogSceneHost: LoadingDialogSceneHost,
     private val currentScreen: () -> AppScreen,
-    private val viewport: () -> GameViewport,
+    private val viewport: () -> Viewport,
     private val showUnavailableDialog: (String) -> Unit
 ) {
     fun showDialogOverGame(dialog: Dialog) {

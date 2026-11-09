@@ -10,7 +10,7 @@ import io.github.rwx.ui.model.SettingsPage
 
 internal class SessionActions(
     private val gameSession: GameSession,
-    private val warmupController: WarmupController,
+    private val startupPreparationController: StartupPreparationController,
     private val pendingStartController: PendingStartController,
     private val settingsSceneHost: SettingsSceneHost,
     private val settingsRepository: GameSettingsRepository,
@@ -22,14 +22,14 @@ internal class SessionActions(
     private val onQuit: () -> Unit,
 ) {
     fun exitRwGameToMainMenu() {
-        warmupController.clear()
+        startupPreparationController.clear()
         pendingStartController.clear()
         navigateTo(AppScreen.MainMenu)
         refreshMainMenu()
     }
 
     fun returnRwGameToBattleRoom() {
-        warmupController.clear()
+        startupPreparationController.clear()
         pendingStartController.clear()
         navigateTo(AppScreen.BattleRoom)
     }
@@ -52,7 +52,7 @@ internal class SessionActions(
     }
 
     fun quitApp() {
-        warmupController.clear()
+        startupPreparationController.clear()
         pendingStartController.clear()
         gameSession.discardRunningGame()
         onQuit()

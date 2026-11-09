@@ -9,7 +9,7 @@ import io.github.rwx.map.PortalTransferMessage
 import io.github.rwx.map.multiplayer.*
 import io.github.rwx.session.GameSession
 import io.github.rwx.session.BattleRoomSnapshot
-import io.github.rwx.render.frame.GameViewport
+import io.github.rwx.geometry.Viewport
 import io.github.rwx.p2p.transfer.*
 import io.github.rwx.ui.CoreUiEventQueue
 import org.koin.mp.KoinPlatform.getKoin
@@ -64,7 +64,7 @@ class P2PLobbyService private constructor() {
     @Volatile
     private var linkedSession: LinkedMapSession? = null
     private var linkedGame: GameSession? = null
-    private var linkedViewport: () -> GameViewport = { GameViewport(1280, 720) }
+    private var linkedViewport: () -> Viewport = { Viewport(1280, 720) }
     private val linkedEvents = ConcurrentLinkedQueue<() -> Unit>()
     private var preparingLinked = false
     private var preparationTicket = 0L
@@ -155,7 +155,7 @@ class P2PLobbyService private constructor() {
     private fun sendMapControl(peer: String, message: MapSessionMessage): Boolean =
         proxy.trySendFeatureMessage(FeatureMessage(type = "mapSession", toPeerId = peer, mapSession = message))
 
-    fun driveLinkedMaps(game: GameSession, viewport: GameViewport) {
+    fun driveLinkedMaps(game: GameSession, viewport: Viewport) {
         linkedGame = game
         linkedViewport = { viewport }
         repeat(256) { linkedEvents.poll()?.invoke() ?: return@repeat }
@@ -434,7 +434,7 @@ class P2PLobbyService private constructor() {
             try {
                 action()
             } catch (error: Throwable) {
-                if (failure == null) failure = error else failure!!.addSuppressed(error)
+                if (failure == null) failure = error else failure.addSuppressed(error)
             }
         }
 
@@ -620,7 +620,7 @@ class P2PLobbyService private constructor() {
     private fun activeModTitles(engine: GameEngine): List<String> {
         return try {
             val manager = engine.modManager
-            val jvmIds = manager.jvmMods.mapNotNull { it.manifest?.id }.toSet()
+            val jvmIds = manager.jvmMods.mapNotNull { it.manifest.id }.toSet()
             manager.mods.asSequence()
                 .filter { it.isEnabled }
                 .filter { !it.isBuiltIn && !it.isCoreMod && it.id !in jvmIds }

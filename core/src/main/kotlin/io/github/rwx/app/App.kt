@@ -2,29 +2,17 @@ package io.github.rwx.app
 
 import io.github.rwx.p2p.P2PLobbyService
 
-import io.github.rwx.ui.model.ModsAction
-import io.github.rwx.ui.model.ResourceBrowserAction
-import io.github.rwx.ui.model.ReplaySelectAction
 import io.github.rwx.ui.model.ReplayEntry
 
 import io.github.rwx.logger
-import io.github.rwx.render.frame.GameFrame
-import io.github.rwx.render.frame.GameViewport
+import io.github.rwx.geometry.Viewport
 import io.github.rwx.ui.*
 import io.github.rwx.ui.model.BattleRoomAction
-import io.github.rwx.ui.model.DialogUiAction
 import io.github.rwx.ui.model.LevelSelectAction
 import io.github.rwx.ui.model.LevelSelectMode
-import io.github.rwx.ui.model.GameInputEvent
-import io.github.rwx.ui.model.MainMenuAction
 import io.github.rwx.ui.model.MainMenuConditions
-import io.github.rwx.ui.model.ModWindowAction
-import io.github.rwx.ui.model.MultiplayerAction
-import io.github.rwx.ui.model.MultiplayerLobbyKind
-import io.github.rwx.ui.model.PauseMenuAction
 import io.github.rwx.ui.model.PauseMenuConditions
 import io.github.rwx.ui.model.ResourceBrowserType
-import io.github.rwx.ui.model.SettingsUiAction
 import kotlinx.coroutines.*
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.StateFlow
@@ -62,52 +50,18 @@ class AppSession internal constructor(
         uiController.close()
         onClose()
     }
-    fun navigateBack() = onBack()
-
-    fun isFinishLoading(): Boolean =
-        navigator.current != AppScreen.Loading
-
-    fun quit() = onQuit()
-
+    fun dispatch(action: AppAction) = uiController.dispatch(action)
     val uiState: StateFlow<AppUiState> get() = uiController.state
-
+    fun isFinishLoading(): Boolean = navigator.current != AppScreen.Loading
+    fun navigateBack() = onBack()
+    fun quit() = onQuit()
     fun mainMenuConditions(): MainMenuConditions = uiState.value.mainMenuConditions
-
     fun setComposeUiEnabled(enabled: Boolean) = uiController.setComposeEnabled(enabled)
 
-    fun dispatchMenuAction(action: MainMenuAction) = uiController.dispatchMenuAction(action)
-
-    fun dispatchSettingsAction(action: SettingsUiAction) = uiController.dispatchSettingsAction(action)
-
-    fun dispatchLevelSelectAction(revision: Long, action: LevelSelectAction) = uiController.dispatchLevelSelectAction(revision, action)
-
-    fun dispatchPauseAction(action: PauseMenuAction) = uiController.dispatchPauseAction(action)
-
-    fun dispatchBattleRoomAction(revision: Long, action: BattleRoomAction) = uiController.dispatchBattleRoomAction(revision, action)
-
-    fun dispatchModsAction(revision: Long, action: ModsAction) = uiController.dispatchModsAction(revision, action)
-
-    fun dispatchResourceBrowserAction(revision: Long, action: ResourceBrowserAction) = uiController.dispatchResourceBrowserAction(revision, action)
-
-    fun dispatchReplaySelectAction(revision: Long, action: ReplaySelectAction) = uiController.dispatchReplaySelectAction(revision, action)
-
-    fun dispatchMultiplayerAction(lobbyKind: MultiplayerLobbyKind, revision: Long, action: MultiplayerAction) =
-        uiController.dispatchMultiplayerAction(lobbyKind, revision, action)
-
-    fun dispatchDialogAction(revision: Long, action: DialogUiAction) = uiController.dispatchDialogAction(revision, action)
-
-    fun dispatchLoadingCancel(revision: Long) = uiController.dispatchLoadingCancel(revision)
-
-    fun dispatchUiBack() = uiController.dispatchBack()
-
-    fun dispatchModWindowAction(revision: Long, action: ModWindowAction) = uiController.dispatchModWindowAction(revision, action)
-
-    /** Unconsumed input from an active non-modal game overlay. */
-    fun dispatchGameInput(event: GameInputEvent) = uiController.dispatchGameInput(event)
 }
 
 fun installApp(
-    viewportProvider: () -> GameViewport,
+    viewportProvider: () -> Viewport,
     scheduler: FrameScheduler,
     presenter: GameFramePresenter,
     options: AppOptions = AppOptions(),
@@ -140,7 +94,6 @@ fun installApp(
 
     lateinit var p2pPreparation: P2PJoinPreparationController
 
-    var lastExternalGameFrame: GameFrame? = null
     val startupTargetScreen = if (options.initialScreen == AppScreen.Loading) {
         AppScreen.MainMenu
     } else {
@@ -149,19 +102,18 @@ fun installApp(
     lateinit var navigator: ScreenNavigator
     lateinit var pendingStartController: PendingStartController
 
-    fun rwGameViewport(): GameViewport = viewportProvider().resolved()
+    fun rwGameViewport(): Viewport = viewportProvider()
 
     val screenPresenter = ScreenPresenter(
         bootstrap = bootstrap,
         viewport = ::rwGameViewport,
     )
 
-    val warmupController = WarmupController(
+    val startupPreparationController = StartupPreparationController(
         gameSession = gameSession,
         menuBackgroundSession = menuBackgroundSession,
         loadingSceneHost = loadingSceneHost,
         navigateTo = { screen -> navigator.navigateTo(screen) },
-        clearExternalFrame = { lastExternalGameFrame = null },
         isBackgroundBattleDemoEnabled = { settingsModel.showBackgroundBattleDemo.value },
     )
 
@@ -202,7 +154,7 @@ fun installApp(
     val gameLaunchController = GameLaunchController(
         gameSession = gameSession,
         battleRoomController = battleRoomController,
-        warmupController = warmupController,
+        startupPreparationController = startupPreparationController,
         pendingStartController = pendingStartController,
         dialogSceneHost = dialogSceneHost,
         viewport = ::rwGameViewport,
@@ -286,7 +238,7 @@ fun installApp(
         viewport = ::rwGameViewport,
         currentScreen = { navigator.current },
         enterRwGame = gameLaunchController::enterRwGame,
-        clearPendingRwStartState = warmupController::clear,
+        clearPendingRwStartState = startupPreparationController::clear,
         clearPendingStartState = pendingStartController::clear,
         setPendingStartState = pendingStartController::set,
         navigateToInGame = { navigator.navigateTo(AppScreen.InGame) },
@@ -357,7 +309,7 @@ fun installApp(
 
     val sessionActions = SessionActions(
         gameSession = gameSession,
-        warmupController = warmupController,
+        startupPreparationController = startupPreparationController,
         pendingStartController = pendingStartController,
         settingsSceneHost = settingsSceneHost,
         settingsRepository = settingsRepository,
@@ -399,7 +351,6 @@ fun installApp(
 
     val screenLifecycleController = ScreenLifecycleController(
         screenPresenter = screenPresenter,
-        externalFrame = { lastExternalGameFrame },
         actions = actions,
         battleRoomController = battleRoomController,
         battleRoomLaunchController = battleRoomLaunchController,
@@ -456,7 +407,7 @@ fun installApp(
         battleBackgroundVisible = { screenPresenter.battleBackgroundVisible },
         onBack = onBack,
         closeModWindow = sessionActions::closeInGameModWindow,
-        refreshInGameOverlay = { screenPresenter.updateInGameOverlay(it, navigator.current, lastExternalGameFrame) },
+        refreshInGameOverlay = { screenPresenter.updateInGameOverlay(it, navigator.current) },
     )
     var frameLoop: OwnedFrameLoop? = null
     val session = AppSession(
@@ -473,7 +424,7 @@ fun installApp(
     )
     StartupController(
         battleRoomController = battleRoomController,
-        warmupController = warmupController,
+        startupPreparationController = startupPreparationController,
     ).start(startupTargetScreen)
 
     ActionRouter(
@@ -482,7 +433,7 @@ fun installApp(
         platformBridge = platformBridge,
         settingsRepository = settingsRepository,
         settingsModel = settingsModel,
-        refreshScreen = { screenPresenter.apply(navigator.current, lastExternalGameFrame) },
+        refreshScreen = { screenPresenter.apply(navigator.current) },
         levelSelectSceneHost = levelSelectSceneHost,
         mapPathPickerController = mapPathPickerController,
         battleRoomController = battleRoomController,
@@ -511,7 +462,7 @@ fun installApp(
         showStartNewGameDialog = gameLaunchController::showStartNewGameDialog,
     ).install()
 
-    screenPresenter.apply(navigator.current, lastExternalGameFrame)
+    screenPresenter.apply(navigator.current)
 
     frameLoop = FrameLoopInstaller(
         viewportProvider = ::rwGameViewport,
@@ -519,11 +470,9 @@ fun installApp(
         onFrame = { uiController.refresh() },
         gameSession = gameSession,
         screenPresenter = screenPresenter,
-        warmupController = warmupController,
+        startupPreparationController = startupPreparationController,
         presenter = presenter,
         currentScreen = { navigator.current },
-        lastExternalFrame = { lastExternalGameFrame },
-        setLastExternalFrame = { frame -> lastExternalGameFrame = frame },
         multiplayerLobbyController = multiplayerLobbyController,
         battleRoomController = battleRoomController,
         battleRoomLaunchController = battleRoomLaunchController,

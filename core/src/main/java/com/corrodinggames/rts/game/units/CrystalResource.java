@@ -7,7 +7,7 @@ import com.corrodinggames.rts.gameFramework.graphics.Texture;
 import io.github.rwx.geometry.RectF;
 import io.github.rwx.render.canvas.ArgbColor;
 import io.github.rwx.render.canvas.BlendColorFilter;
-import io.github.rwx.render.frame.GameCanvasBlendMode;
+import io.github.rwx.render.canvas.CanvasBlendMode;
 import io.github.rwx.render.canvas.Paint;
 
 /* JADX INFO: renamed from: com.corrodinggames.rts.game.units.e */
@@ -18,7 +18,7 @@ public class CrystalResource extends BaseBuilding {
     float animationTimer;
     /* JADX INFO: renamed from: a */
     static Texture texture = null;
-    static BlendColorFilter c = new BlendColorFilter(ArgbColor.a(200, 200, 200), GameCanvasBlendMode.Multiply);
+    static BlendColorFilter c = new BlendColorFilter(ArgbColor.a(200, 200, 200), CanvasBlendMode.Multiply);
 
     @Override // com.corrodinggames.rts.game.units.BaseUnit
     /* JADX INFO: renamed from: b, reason: merged with bridge method [inline-methods] */

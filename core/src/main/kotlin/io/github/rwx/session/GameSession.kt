@@ -2,7 +2,6 @@ package io.github.rwx.session
 
 import com.corrodinggames.rts.game.PlayerTeam
 import com.corrodinggames.rts.game.map.TileMap
-import com.corrodinggames.rts.game.units.UnitTypeEnum
 import com.corrodinggames.rts.gameFramework.*
 import com.corrodinggames.rts.gameFramework.graphics.GraphicsEngine
 import com.corrodinggames.rts.gameFramework.network.*
@@ -24,8 +23,7 @@ import java.util.concurrent.CompletableFuture
 import io.github.rwx.net.CoreUiNetworkCallbacks
 import io.github.rwx.platform.CoreGameView
 import io.github.rwx.render.RenderBackend
-import io.github.rwx.render.frame.GameFrame
-import io.github.rwx.render.frame.GameViewport
+import io.github.rwx.geometry.Viewport
 import io.github.rwx.ui.BattleRoomUiBridge
 import io.github.rwx.ui.InGameMenuCallbacks
 import io.github.rwx.ui.InGameMenuController
@@ -187,7 +185,7 @@ abstract class GameSession {
 
     /** The renderer keeps one world. The source worker remains alive while its view is detached. */
     fun linkedMapView(
-        viewport: () -> GameViewport, pathFor: (MapWorldId) -> String,
+        viewport: () -> Viewport, pathFor: (MapWorldId) -> String,
         detachRoomGame: () -> Unit
     ): MapSessionView = object : MapSessionView {
         val bookmarks = mutableMapOf<MapWorldId, MapViewBookmark>()
@@ -351,7 +349,7 @@ abstract class GameSession {
     val inGameMenuController = InGameMenuController()
 
     protected abstract val renderBackend: RenderBackend
-    protected open val defaultPreloadViewport: GameViewport = GameViewport(1280, 720)
+    protected open val defaultPreloadViewport: Viewport = Viewport(1280, 720)
 
     @Volatile
     private var rendererProfile: GameSessionRendererProfile = GameSessionRendererProfile()
@@ -408,10 +406,7 @@ abstract class GameSession {
     }
 
     @Volatile
-    protected var lastViewport: GameViewport = GameViewport(0, 0)
-
-    @Volatile
-    protected var lastFrame: GameFrame = GameFrame(lastViewport, emptyList())
+    protected var lastViewport: Viewport = Viewport(0, 0)
 
     private val asyncEnginePreloadInProgress = AtomicBoolean(false)
 
@@ -480,17 +475,16 @@ abstract class GameSession {
     }
 
     open fun updateFrame(
-        viewport: GameViewport,
+        viewport: Viewport,
         deltaSeconds: Float,
         drainVisibleLayerBuffers: Boolean = false,
-    ): GameFrame = lastFrame
-
-    open fun currentFrame(): GameFrame = lastFrame
+    ) {
+    }
 
     /** Keep the UI above the native game surface when [uiOverlay] is requested. */
     open fun setGameVisible(
         visible: Boolean,
-        viewport: GameViewport,
+        viewport: Viewport,
         uiOverlay: Boolean = false,
         pausedBackground: Boolean = false,
     ) = Unit
@@ -525,7 +519,7 @@ abstract class GameSession {
         inGameMenuController.setCallbacks(callbacks)
     }
 
-    open fun preload(viewport: GameViewport): GameEngine {
+    open fun preload(viewport: Viewport): GameEngine {
         lastViewport = viewport
         val engine = ensureStartedOutsideGameLock(viewport)
         synchronized(gameLock) {
@@ -535,7 +529,7 @@ abstract class GameSession {
     }
 
     open fun ensureRendererEngine(
-        viewport: GameViewport,
+        viewport: Viewport,
         graphicsEngine: GraphicsEngine,
         view: CoreGameView,
         platformCallbacks: PlatformCallbacks? = null,
@@ -563,7 +557,7 @@ abstract class GameSession {
         }
     }
 
-    open fun prepareEngineAsync(viewport: GameViewport) {
+    open fun prepareEngineAsync(viewport: Viewport) {
         if (gameEngine != null) {
             return
         }
@@ -603,7 +597,7 @@ abstract class GameSession {
         }
     }
 
-    open fun prepareMapAsync(mapPath: String?, viewport: GameViewport) {
+    open fun prepareMapAsync(mapPath: String?, viewport: Viewport) {
         val requestedMapPath = mapPath?.takeIf { it.isNotBlank() } ?: return
         if (isMapLoaded(requestedMapPath)) {
             return
@@ -620,7 +614,7 @@ abstract class GameSession {
         }
     }
 
-    open fun prepareSavedGameAsync(saveName: String, viewport: GameViewport) {
+    open fun prepareSavedGameAsync(saveName: String, viewport: Viewport) {
         val requestedSaveName = saveName.takeIf { it.isNotBlank() } ?: return
         if (isMapLoaded(requestedSaveName)) {
             return
@@ -637,7 +631,7 @@ abstract class GameSession {
         }
     }
 
-    open fun prepareMapSnapshotAsync(snapshot: MapSnapshot, viewport: GameViewport) {
+    open fun prepareMapSnapshotAsync(snapshot: MapSnapshot, viewport: Viewport) {
         if (isMapLoaded(snapshot.mapPath)) {
             return
         }
@@ -659,7 +653,7 @@ abstract class GameSession {
         }
     }
 
-    open fun prepareReplayAsync(replayName: String, viewport: GameViewport) {
+    open fun prepareReplayAsync(replayName: String, viewport: Viewport) {
         val requestedReplayName = replayName.takeIf { it.isNotBlank() } ?: return
         val generation = tryBeginAsyncLoad(
             requestKey = requestedReplayName,
@@ -672,7 +666,7 @@ abstract class GameSession {
         }
     }
 
-    open fun prepareBattleRoomAsync(config: BattleRoomLaunchConfig, viewport: GameViewport) {
+    open fun prepareBattleRoomAsync(config: BattleRoomLaunchConfig, viewport: Viewport) {
         val requestedMapPath = config.room.mapPath.takeIf { it.isNotBlank() } ?: return
         if (isMapLoaded(requestedMapPath) && loadState.activeRendererBattleRoomConfig == config) {
             return
@@ -705,7 +699,7 @@ abstract class GameSession {
      */
     private fun tryBeginAsyncLoad(
         requestKey: String,
-        viewport: GameViewport,
+        viewport: Viewport,
         resetLastFrame: (SessionLoadState) -> Boolean,
         mutate: (SessionLoadState) -> SessionLoadState = { it },
     ): Long? {
@@ -727,13 +721,10 @@ abstract class GameSession {
             }
         }
         val issuedTicket = ticket ?: return null
-        if (resetFrame) {
-            lastFrame = GameFrame(viewport, emptyList())
-        }
         return issuedTicket
     }
 
-    open fun adoptStartedGameFromEngine(viewport: GameViewport): Boolean = false
+    open fun adoptStartedGameFromEngine(viewport: Viewport): Boolean = false
 
     open fun prepareLocalBattleRoom(config: BattleRoomLaunchConfig): Boolean {
         updateLoadState {
@@ -744,7 +735,6 @@ abstract class GameSession {
             )
         }
         disconnectUnstartedNetworking("starting local battleroom")
-        lastFrame = GameFrame(lastViewport, emptyList())
         return true
     }
 
@@ -782,7 +772,7 @@ abstract class GameSession {
         return synchronized(gameLock) { currentBattleRoomFromEngineLocked() != null }
     }
 
-    open fun prepareMenuBackgroundAsync(viewport: GameViewport) = Unit
+    open fun prepareMenuBackgroundAsync(viewport: Viewport) = Unit
 
     open fun isMenuBackgroundActive(): Boolean = loadState.menuBackgroundActive
 
@@ -1298,7 +1288,7 @@ abstract class GameSession {
         }
     }
 
-    open fun markRendererMapReady(mapPath: String, viewport: GameViewport) {
+    open fun markRendererMapReady(mapPath: String, viewport: Viewport) {
         lastViewport = viewport
         updateLoadState { current ->
             val promotesBattleRoomConfig = current.pendingRendererBattleRoomConfig?.room?.mapPath == mapPath
@@ -1359,7 +1349,6 @@ abstract class GameSession {
         }
         asyncEnginePreloadInProgress.set(false)
         asyncEnginePreloadError = null
-        lastFrame = GameFrame(lastViewport, emptyList())
         clearInputState()
         synchronized(gameLock) {
             gameEngine?.let { engine ->
@@ -1645,14 +1634,14 @@ abstract class GameSession {
         if (!isMapLoaded(mapPath)) {
             return false
         }
-        return lastFrame.commands.isNotEmpty() || !TileMap.layerBufferManager.hasVisiblePendingRedraws()
+        return !TileMap.layerBufferManager.hasVisiblePendingRedraws()
     }
 
-    abstract fun loadPendingMapNow(): GameFrame
+    abstract fun loadPendingMapNow()
 
-    protected abstract fun ensureStarted(viewport: GameViewport): GameEngine
+    protected abstract fun ensureStarted(viewport: Viewport): GameEngine
 
-    protected abstract fun applyViewport(engine: GameEngine, viewport: GameViewport)
+    protected abstract fun applyViewport(engine: GameEngine, viewport: Viewport)
 
     protected open fun clearInputState() = Unit
 
@@ -1688,7 +1677,7 @@ abstract class GameSession {
         return created
     }
 
-    private fun ensureStartedOutsideGameLock(viewport: GameViewport): GameEngine =
+    private fun ensureStartedOutsideGameLock(viewport: Viewport): GameEngine =
         synchronized(engineStartLock) engineStart@{
             synchronized(gameLock) {
                 activeEngineLocked()
@@ -1696,7 +1685,7 @@ abstract class GameSession {
             ensureStarted(viewport)
         }
 
-    protected fun preloadEngineInBackground(requestedViewport: GameViewport) {
+    protected fun preloadEngineInBackground(requestedViewport: Viewport) {
         val startedAt = System.nanoTime()
         runCatching {
             val viewport = requestedViewport.takeIf { it.width > 0 && it.height > 0 } ?: defaultPreloadViewport
@@ -1873,7 +1862,7 @@ abstract class GameSession {
     private fun loadLevelInBackground(
         kind: String,
         requestKey: String,
-        requestedViewport: GameViewport,
+        requestedViewport: Viewport,
         generation: Long,
         load: (GameEngine) -> Unit,
     ) {
@@ -1894,10 +1883,8 @@ abstract class GameSession {
                 load(engine)
                 loadMs = elapsedMs(loadStartedAt)
                 val firstFrameStartedAt = System.nanoTime()
-                val preparedFrame = prepareFrameAfterBackgroundLoad(engine, viewport)
                 firstFrameMs = elapsedMs(firstFrameStartedAt)
                 if (generation == loadState.mapLoadGeneration) {
-                    lastFrame = preparedFrame
                     loadedCurrentRequest = true
                 }
             }
@@ -1921,36 +1908,31 @@ abstract class GameSession {
         }
     }
 
-    private fun loadMapInBackground(mapPath: String, requestedViewport: GameViewport, generation: Long) =
+    private fun loadMapInBackground(mapPath: String, requestedViewport: Viewport, generation: Long) =
         loadLevelInBackground("map", mapPath, requestedViewport, generation) { engine ->
             loadMap(engine, mapPath)
         }
 
     private fun loadSavedGameInBackground(
         saveName: String,
-        requestedViewport: GameViewport,
+        requestedViewport: Viewport,
         generation: Long,
     ) = loadLevelInBackground("saved game", saveName, requestedViewport, generation) { engine ->
         loadSavedGame(engine, saveName)
     }
 
-    private fun loadReplayInBackground(replayName: String, requestedViewport: GameViewport, generation: Long) =
+    private fun loadReplayInBackground(replayName: String, requestedViewport: Viewport, generation: Long) =
         loadLevelInBackground("replay", replayName, requestedViewport, generation) { engine ->
             loadReplay(engine, replayName)
         }
 
     private fun loadMapSnapshotInBackground(
         snapshot: MapSnapshot,
-        requestedViewport: GameViewport,
+        requestedViewport: Viewport,
         generation: Long,
     ) = loadLevelInBackground("map snapshot", snapshot.mapPath, requestedViewport, generation) { engine ->
         loadMapSnapshot(engine, snapshot)
     }
-
-    protected open fun prepareFrameAfterBackgroundLoad(
-        engine: GameEngine,
-        viewport: GameViewport,
-    ): GameFrame = GameFrame(viewport, emptyList())
 
     protected fun loadPendingMap(engine: GameEngine) {
         val staged = loadState

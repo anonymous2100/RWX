@@ -28,7 +28,7 @@ import io.github.rwx.geometry.Point;
 import io.github.rwx.geometry.PointF;
 import io.github.rwx.geometry.Rect;
 import io.github.rwx.geometry.RectF;
-import io.github.rwx.render.frame.GameCanvasBlendMode;
+import io.github.rwx.render.canvas.CanvasBlendMode;
 import io.github.rwx.render.canvas.Paint;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -740,7 +740,7 @@ public final class TileMap {
         this.placementInvalidFillPaint = new GamePaint();
         this.placementInvalidFillPaint.a(155, 175, 0, 0);
         this.clearXferPaint = new GamePaint();
-        this.clearXferPaint.a(GameCanvasBlendMode.Clear);
+        this.clearXferPaint.a(CanvasBlendMode.Clear);
     }
 
     /* JADX INFO: renamed from: a */

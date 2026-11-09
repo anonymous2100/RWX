@@ -3,6 +3,7 @@ package io.github.rwx.ui
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import io.github.rwx.app.AppAction
 import io.github.rwx.app.AppSession
 import io.github.rwx.ui.platform.PlatformComposeHost
 import kotlinx.coroutines.CoroutineScope
@@ -35,20 +36,49 @@ class DesktopComposeOverlay constructor(
             val snapshot by state.collectAsState()
             ComposeOverlayContent(
                 state = snapshot,
-                onMenuAction = { session?.dispatchMenuAction(it) },
-                onSettingsAction = { session?.dispatchSettingsAction(it) },
-                onBack = { session?.dispatchUiBack() },
-                onLevelSelectAction = { revision, action -> session?.dispatchLevelSelectAction(revision, action) },
-                onPauseAction = { session?.dispatchPauseAction(it) },
-                onMultiplayerAction = { kind, revision, action -> session?.dispatchMultiplayerAction(kind, revision, action) },
-                onBattleRoomAction = { revision, action -> session?.dispatchBattleRoomAction(revision, action) },
-                onDialogAction = { revision, action -> session?.dispatchDialogAction(revision, action) },
-                onLoadingCancel = { session?.dispatchLoadingCancel(it) },
-                onModsAction = { revision, action -> session?.dispatchModsAction(revision, action) },
-                onResourceBrowserAction = { revision, action -> session?.dispatchResourceBrowserAction(revision, action) },
-                onReplaySelectAction = { revision, action -> session?.dispatchReplaySelectAction(revision, action) },
-                onModWindowAction = { revision, action -> session?.dispatchModWindowAction(revision, action) },
-                onGameInput = { event -> session?.dispatchGameInput(event) },
+                onMenuAction = { session?.dispatch(AppAction.Menu(it)) },
+                onSettingsAction = { session?.dispatch(AppAction.Settings(it)) },
+                onBack = { session?.dispatch(AppAction.Back) },
+                onLevelSelectAction = { revision, action ->
+                    session?.dispatch(
+                        AppAction.LevelSelect(
+                            revision,
+                            action
+                        )
+                    )
+                },
+                onPauseAction = { session?.dispatch(AppAction.Pause(it)) },
+                onMultiplayerAction = { kind, revision, action ->
+                    session?.dispatch(
+                        AppAction.Multiplayer(
+                            kind,
+                            revision,
+                            action
+                        )
+                    )
+                },
+                onBattleRoomAction = { revision, action -> session?.dispatch(AppAction.BattleRoom(revision, action)) },
+                onDialogAction = { revision, action -> session?.dispatch(AppAction.Dialog(revision, action)) },
+                onLoadingCancel = { session?.dispatch(AppAction.LoadingCancel(it)) },
+                onModsAction = { revision, action -> session?.dispatch(AppAction.Mods(revision, action)) },
+                onResourceBrowserAction = { revision, action ->
+                    session?.dispatch(
+                        AppAction.ResourceBrowser(
+                            revision,
+                            action
+                        )
+                    )
+                },
+                onReplaySelectAction = { revision, action ->
+                    session?.dispatch(
+                        AppAction.ReplaySelect(
+                            revision,
+                            action
+                        )
+                    )
+                },
+                onModWindowAction = { revision, action -> session?.dispatch(AppAction.ModWindow(revision, action)) },
+                onGameInput = { event -> session?.dispatch(AppAction.GameInput(event)) },
             )
         }
         // Hidden ComposePanels have no composition yet. Drive visibility independently, and

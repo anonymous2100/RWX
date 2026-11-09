@@ -15,8 +15,7 @@ import io.github.rwx.logger
 import io.github.rwx.platform.CoreGameView
 import io.github.rwx.render.SkiaGraphicsEngine
 import io.github.rwx.render.RenderBackend
-import io.github.rwx.render.frame.GameFrame
-import io.github.rwx.render.frame.GameViewport
+import io.github.rwx.geometry.Viewport
 import io.github.rwx.session.GameSession
 import io.github.rwx.session.GameSessionRendererProfile
 import io.github.rwx.session.BattleRoomLaunchConfig
@@ -34,7 +33,7 @@ class HeadlessGameSession(
     registerShutdownHook: Boolean = true,
 ) : GameSession(), AutoCloseable {
     override val renderBackend: RenderBackend = DesktopRenderBackend.Headless
-    override val defaultPreloadViewport = GameViewport(640, 480)
+    override val defaultPreloadViewport = Viewport(640, 480)
     private val closed = AtomicBoolean(false)
     private val graphicsResource = lazy { SkiaGraphicsEngine(storage) }
     private val graphics by graphicsResource
@@ -49,13 +48,13 @@ class HeadlessGameSession(
 
     val tick: Int get() = synchronized(gameLock) { gameEngine?.currentTick ?: 0 }
 
-    fun step(deltaSeconds: Float = 1f / 60f): GameFrame = updateFrame(defaultPreloadViewport, deltaSeconds)
+    fun step(deltaSeconds: Float = 1f / 60f) = updateFrame(defaultPreloadViewport, deltaSeconds)
 
-    override fun updateFrame(viewport: GameViewport, deltaSeconds: Float, drainVisibleLayerBuffers: Boolean): GameFrame {
+    override fun updateFrame(viewport: Viewport, deltaSeconds: Float, drainVisibleLayerBuffers: Boolean) {
         require(deltaSeconds.isFinite() && deltaSeconds >= 0f) { "Simulation delta must be finite and non-negative" }
-        if (closed.get() || isEngineBusyForUiReads()) return lastFrame
+        if (closed.get() || isEngineBusyForUiReads()) return
         synchronized(gameLock) {
-            if (closed.get() || isEngineBusyForUiReads()) return lastFrame
+            if (closed.get() || isEngineBusyForUiReads()) return
             val resolved = viewport.takeIf { it.width > 0 && it.height > 0 } ?: defaultPreloadViewport
             val engine = ensureStarted(resolved)
             if (lastViewport != resolved) applyViewport(engine, resolved)
@@ -85,21 +84,19 @@ class HeadlessGameSession(
                 engine.shouldSkipNextDraw = true
                 engine.gameLoop(gameDelta, (deltaSeconds * 1000f).roundToInt())
             }
-            lastFrame = GameFrame(resolved, emptyList())
-            return lastFrame
         }
     }
 
-    override fun loadPendingMapNow(): GameFrame = updateFrame(lastViewport, 0f)
+    override fun loadPendingMapNow() = updateFrame(lastViewport, 0f)
 
     // Other backends may adopt the process singleton; this session only uses its own engine.
     override fun activeEngineLocked(): GameEngine? = gameEngine
 
-    override fun ensureStarted(viewport: GameViewport): GameEngine = synchronized(gameLock) {
+    override fun ensureStarted(viewport: Viewport): GameEngine = synchronized(gameLock) {
         synchronized(GameEngine::class.java) { startLocked(viewport) }
     }
 
-    private fun startLocked(viewport: GameViewport): GameEngine {
+    private fun startLocked(viewport: Viewport): GameEngine {
         check(!closed.get()) { "Game session is closed" }
         gameEngine?.let { return it }
         check(GameEngine.getInstance() == null) { "A game engine already exists; use a separate process for a headless session" }
@@ -123,14 +120,14 @@ class HeadlessGameSession(
         }
     }
 
-    override fun applyViewport(engine: GameEngine, viewport: GameViewport) {
+    override fun applyViewport(engine: GameEngine, viewport: Viewport) {
         check(!closed.get()) { "Game session is closed" }
-        lastViewport = GameViewport(viewport.width.coerceAtLeast(1), viewport.height.coerceAtLeast(1))
+        lastViewport = Viewport(viewport.width.coerceAtLeast(1), viewport.height.coerceAtLeast(1))
         engine.updateWindowResolution(lastViewport.width, lastViewport.height)
         graphics.a(lastViewport.width, lastViewport.height)
     }
 
-    override fun adoptStartedGameFromEngine(viewport: GameViewport): Boolean = synchronized(gameLock) {
+    override fun adoptStartedGameFromEngine(viewport: Viewport): Boolean = synchronized(gameLock) {
         if (closed.get()) return@synchronized false
         val engine = gameEngine ?: return@synchronized false
         if (!engine.networkEngine.hasActiveStartedGameConnection()) return@synchronized false
@@ -146,14 +143,23 @@ class HeadlessGameSession(
     override fun submitKey(androidKeyCode: Int, isDown: Boolean) = Unit
     override fun submitMouseWheel(amount: Int) = Unit
 
-    override fun prepareEngineAsync(viewport: GameViewport) = whileOpen { super.prepareEngineAsync(viewport) }
+    override fun prepareEngineAsync(viewport: Viewport) = whileOpen { super.prepareEngineAsync(viewport) }
     override fun requestMap(mapPath: String?) = whileOpen { super.requestMap(mapPath) }
     override fun requestMapSnapshot(snapshot: MapSnapshot) = whileOpen { super.requestMapSnapshot(snapshot) }
-    override fun prepareMapAsync(mapPath: String?, viewport: GameViewport) = whileOpen { super.prepareMapAsync(mapPath, viewport) }
-    override fun prepareSavedGameAsync(saveName: String, viewport: GameViewport) = whileOpen { super.prepareSavedGameAsync(saveName, viewport) }
-    override fun prepareReplayAsync(replayName: String, viewport: GameViewport) = whileOpen { super.prepareReplayAsync(replayName, viewport) }
-    override fun prepareMapSnapshotAsync(snapshot: MapSnapshot, viewport: GameViewport) = whileOpen { super.prepareMapSnapshotAsync(snapshot, viewport) }
-    override fun prepareBattleRoomAsync(config: BattleRoomLaunchConfig, viewport: GameViewport) = whileOpen { super.prepareBattleRoomAsync(config, viewport) }
+    override fun prepareMapAsync(mapPath: String?, viewport: Viewport) =
+        whileOpen { super.prepareMapAsync(mapPath, viewport) }
+
+    override fun prepareSavedGameAsync(saveName: String, viewport: Viewport) =
+        whileOpen { super.prepareSavedGameAsync(saveName, viewport) }
+
+    override fun prepareReplayAsync(replayName: String, viewport: Viewport) =
+        whileOpen { super.prepareReplayAsync(replayName, viewport) }
+
+    override fun prepareMapSnapshotAsync(snapshot: MapSnapshot, viewport: Viewport) =
+        whileOpen { super.prepareMapSnapshotAsync(snapshot, viewport) }
+
+    override fun prepareBattleRoomAsync(config: BattleRoomLaunchConfig, viewport: Viewport) =
+        whileOpen { super.prepareBattleRoomAsync(config, viewport) }
 
     private fun whileOpen(action: () -> Unit) {
         synchronized(gameLock) { if (!closed.get()) action() }

@@ -26,6 +26,100 @@ internal class AppUiController(
     private val dialogOwnership = DialogUiOwnership()
     private var inGameOverlay: InGameOverlayState? = null
 
+    fun dispatch(appAction: AppAction) = when (appAction) {
+        is AppAction.Menu -> submit {
+            if (canDispatchPageAction(AppScreen.MainMenu) &&
+                MainMenuViewModel.items(mainMenuConditions()).any { it.action == appAction.action }
+            ) {
+                bootstrap.actions.menu(appAction.action)
+            }
+        }
+
+        is AppAction.LevelSelect -> submit {
+            if (canDispatchPageAction(AppScreen.LevelSelect)) {
+                bootstrap.levelSelectSceneHost.snapshot().resolveAction(appAction.revision, appAction.action)
+                    ?.let(bootstrap.actions.levelSelect)
+            }
+        }
+
+        is AppAction.Pause -> submit {
+            if (canDispatchPageAction(AppScreen.Paused) &&
+                bootstrap.pauseSceneHost.snapshotItems().any { it.action == appAction.action }
+            ) {
+                bootstrap.actions.pause(appAction.action)
+            }
+        }
+
+        is AppAction.Multiplayer -> submit {
+            if (canDispatchPageAction(AppScreen.Multiplayer)) {
+                bootstrap.multiplayerSceneHost.snapshot()
+                    .resolveAction(appAction.lobbyKind, appAction.revision, appAction.action)
+                    ?.let(bootstrap.actions.multiplayer)
+            }
+        }
+
+        is AppAction.BattleRoom -> submit {
+            if (canDispatchPageAction(AppScreen.BattleRoom)) {
+                bootstrap.battleRoomSceneHost.snapshot().resolveAction(appAction.revision, appAction.action)
+                    ?.let(bootstrap.actions.battleRoom)
+            }
+        }
+
+        is AppAction.Mods -> submit {
+            if (canDispatchPageAction(AppScreen.Mods)) {
+                bootstrap.modsSceneHost.snapshot().resolveAction(appAction.revision, appAction.action)
+                    ?.let(bootstrap.actions.mods)
+            }
+        }
+
+        is AppAction.ResourceBrowser -> submit {
+            if (canDispatchPageAction(AppScreen.ResourceBrowser)) {
+                bootstrap.resourceBrowserSceneHost.currentModel().resolveAction(appAction.revision, appAction.action)
+                    ?.let(bootstrap.actions.resourceBrowser)
+            }
+        }
+
+        is AppAction.ReplaySelect -> submit {
+            if (canDispatchPageAction(AppScreen.ReplaySelect)) {
+                bootstrap.replaySelectSceneHost.snapshot().resolveAction(appAction.revision, appAction.action)
+                    ?.let(bootstrap.actions.replaySelect)
+            }
+        }
+
+        AppAction.Back -> submit {
+            if (currentScreen() != AppScreen.Loading && canDispatchPageAction(mutableState.value.screen)) {
+                // Escape first ends a mod's world-position pick, exactly like the legacy key listener.
+                if (!bootstrap.settingsSceneHost.keyBindingEditor.cancelCapture() && !UiRegistry.cancelWorldPositionSelection()) onBack()
+            }
+        }
+
+        is AppAction.ModWindow -> submit {
+            if (canDispatchPageAction(AppScreen.ModWindow) && UiRegistry.windowSnapshot().revision == appAction.revision) {
+                when (appAction.action) {
+                    ModWindowAction.Close -> closeModWindow()
+                }
+            }
+        }
+
+        is AppAction.GameInput -> scope.launch {
+            val published = mutableState.value
+            val forwarding = composeEnabled && published.forwardsInputToGame && currentScreen() == AppScreen.InGame &&
+                    !bootstrap.dialogSceneHost.isVisible && !bootstrap.loadingDialogSceneHost.isVisible
+            if (appAction.event == GameInputEvent.ReleaseAll || !forwarding) gameInputSink.release()
+            else gameInputSink.handle(appAction.event)
+        }
+
+        is AppAction.LoadingCancel -> submit {
+            val published = mutableState.value
+            if (composeEnabled && published.showComposeOverlay && published.loadingDialog?.revision == appAction.revision) {
+                bootstrap.loadingDialogSceneHost.cancel(appAction.revision)
+            }
+        }
+
+        is AppAction.Settings -> dispatchSettingsAction(appAction.action)
+        is AppAction.Dialog -> dispatchDialogAction(appAction.revision, appAction.action)
+    }
+
     private fun dialogOwner(): DialogUiOwner {
         val screen = currentScreen()
         val inRoom = screen == AppScreen.BattleRoom
@@ -38,9 +132,11 @@ internal class AppUiController(
 
     private fun canDispatchPageAction(screen: AppScreen): Boolean =
         composeEnabled && mutableState.value.canInteractWithScreen && currentScreen() == screen &&
-            !bootstrap.dialogSceneHost.isVisible && !bootstrap.loadingDialogSceneHost.isVisible
+                !bootstrap.dialogSceneHost.isVisible && !bootstrap.loadingDialogSceneHost.isVisible
 
-    private val scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Main.immediate)
+    private val scope =
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Main.immediate)
+
     fun close() {
         scope.coroutineContext[kotlinx.coroutines.Job]?.cancel()
         gameInputSink.release()
@@ -54,83 +150,6 @@ internal class AppUiController(
         composeEnabled = enabled
     }
 
-    fun dispatchMenuAction(action: MainMenuAction) = submit {
-        if (canDispatchPageAction(AppScreen.MainMenu) &&
-            MainMenuViewModel.items(mainMenuConditions()).any { it.action == action }
-        ) {
-            bootstrap.actions.menu(action)
-        }
-    }
-
-    fun dispatchLevelSelectAction(revision: Long, action: LevelSelectAction) = submit {
-        if (canDispatchPageAction(AppScreen.LevelSelect)) {
-            bootstrap.levelSelectSceneHost.snapshot().resolveAction(revision, action)?.let(bootstrap.actions.levelSelect)
-        }
-    }
-
-    fun dispatchMultiplayerAction(lobbyKind: MultiplayerLobbyKind, revision: Long, action: MultiplayerAction) = submit {
-        if (canDispatchPageAction(AppScreen.Multiplayer)) {
-            bootstrap.multiplayerSceneHost.snapshot().resolveAction(lobbyKind, revision, action)?.let(bootstrap.actions.multiplayer)
-        }
-    }
-
-    fun dispatchBattleRoomAction(revision: Long, action: BattleRoomAction) = submit {
-        if (canDispatchPageAction(AppScreen.BattleRoom)) {
-            bootstrap.battleRoomSceneHost.snapshot().resolveAction(revision, action)?.let(bootstrap.actions.battleRoom)
-        }
-    }
-
-    fun dispatchModsAction(revision: Long, action: ModsAction) = submit {
-        if (canDispatchPageAction(AppScreen.Mods)) {
-            bootstrap.modsSceneHost.snapshot().resolveAction(revision, action)?.let(bootstrap.actions.mods)
-        }
-    }
-
-    fun dispatchResourceBrowserAction(revision: Long, action: ResourceBrowserAction) = submit {
-        if (canDispatchPageAction(AppScreen.ResourceBrowser)) {
-            bootstrap.resourceBrowserSceneHost.currentModel().resolveAction(revision, action)?.let(bootstrap.actions.resourceBrowser)
-        }
-    }
-
-    fun dispatchReplaySelectAction(revision: Long, action: ReplaySelectAction) = submit {
-        if (canDispatchPageAction(AppScreen.ReplaySelect)) {
-            bootstrap.replaySelectSceneHost.snapshot().resolveAction(revision, action)?.let(bootstrap.actions.replaySelect)
-        }
-    }
-
-    fun dispatchPauseAction(action: PauseMenuAction) = submit {
-        if (canDispatchPageAction(AppScreen.Paused) &&
-            bootstrap.pauseSceneHost.snapshotItems().any { it.action == action }
-        ) {
-            bootstrap.actions.pause(action)
-        }
-    }
-
-    fun dispatchBack() = submit {
-        if (currentScreen() != AppScreen.Loading && canDispatchPageAction(mutableState.value.screen)) {
-            // Escape first ends a mod's world-position pick, exactly like the legacy key listener.
-            if (!bootstrap.settingsSceneHost.keyBindingEditor.cancelCapture() && !UiRegistry.cancelWorldPositionSelection()) onBack()
-        }
-    }
-
-    fun dispatchModWindowAction(revision: Long, action: ModWindowAction) = submit {
-        if (canDispatchPageAction(AppScreen.ModWindow) && UiRegistry.windowSnapshot().revision == revision) {
-            when (action) {
-                ModWindowAction.Close -> closeModWindow()
-            }
-        }
-    }
-
-    /** High-frequency and never changes UI state, so it skips the snapshot rebuild other actions trigger. */
-    fun dispatchGameInput(event: GameInputEvent) {
-        scope.launch {
-            val published = mutableState.value
-            val forwarding = composeEnabled && published.forwardsInputToGame && currentScreen() == AppScreen.InGame &&
-                !bootstrap.dialogSceneHost.isVisible && !bootstrap.loadingDialogSceneHost.isVisible
-            if (event == GameInputEvent.ReleaseAll || !forwarding) gameInputSink.release()
-            else gameInputSink.handle(event)
-        }
-    }
 
     fun dispatchSettingsAction(action: SettingsUiAction) = submit {
         if (action is SettingsUiAction.CancelKeyCapture) {
@@ -142,6 +161,7 @@ internal class AppUiController(
             is SettingsUiAction.SelectPage -> {
                 if (action.page in visibleSettingsPages()) bootstrap.settingsSceneHost.showPage(action.page)
             }
+
             is SettingsUiAction.SelectColorScheme -> {
                 val page = bootstrap.settingsSceneHost.pageContent()
                 if (page.page == SettingsPage.Theme &&
@@ -151,8 +171,14 @@ internal class AppUiController(
                     bootstrap.actions.settings(SettingsAction.ApplyChanges)
                 }
             }
+
             is SettingsUiAction.BeginKeyCapture -> bootstrap.settingsSceneHost.keyBindingEditor.beginCapture(action.capture)
-            is SettingsUiAction.CaptureKey -> bootstrap.settingsSceneHost.keyBindingEditor.captureKey(action.requestId, action.keyCode, action.modifiers)
+            is SettingsUiAction.CaptureKey -> bootstrap.settingsSceneHost.keyBindingEditor.captureKey(
+                action.requestId,
+                action.keyCode,
+                action.modifiers
+            )
+
             is SettingsUiAction.ClearKeyBinding -> bootstrap.settingsSceneHost.keyBindingEditor.clear(action.target)
             is SettingsUiAction.SelectRenderBackend -> {
                 val pageContent = bootstrap.settingsSceneHost.pageContent()
@@ -164,6 +190,7 @@ internal class AppUiController(
                     bootstrap.actions.settings(SettingsAction.ApplyChanges)
                 }
             }
+
             is SettingsUiAction.SelectStorage -> {
                 val page = bootstrap.settingsSceneHost.pageContent()
                 if (page.page == SettingsPage.Display &&
@@ -174,6 +201,7 @@ internal class AppUiController(
                     bootstrap.actions.settings(SettingsAction.ApplyChanges)
                 }
             }
+
             is SettingsUiAction.RequestExternalStorage -> {
                 val host = bootstrap.platformBridge?.filePickerHost ?: return@submit
                 host.requestExternalStorage { selection ->
@@ -186,34 +214,39 @@ internal class AppUiController(
                     }
                 }
             }
+
             SettingsUiAction.Back -> {
                 bootstrap.settingsSceneHost.keyBindingEditor.cancelCapture()
                 bootstrap.actions.settings(SettingsAction.Back)
             }
+
             else -> bootstrap.settingsSceneHost.pageContent().applyEdit(action)?.let(bootstrap.actions.settings)
         }
     }
 
     fun dispatchDialogAction(revision: Long, action: DialogUiAction) = submit {
         val published = mutableState.value
-        if (published.dialog?.revision != revision || !dialogOwnership.canDispatch(revision, dialogOwner())) return@submit
+        if (published.dialog?.revision != revision || !dialogOwnership.canDispatch(
+                revision,
+                dialogOwner()
+            )
+        ) return@submit
         // Let already queued edits finish during a renderer handoff; never submit behind a legacy modal.
         val isEdit = action is DialogUiAction.EditInput || action is DialogUiAction.EditField
         if (!isEdit && (!published.showComposeOverlay || !composeEnabled ||
-                bootstrap.loadingDialogSceneHost.isVisible)) return@submit
+                    bootstrap.loadingDialogSceneHost.isVisible)
+        ) return@submit
         bootstrap.dialogSceneHost.dispatch(revision, action)
     }
 
-    fun dispatchLoadingCancel(revision: Long) = submit {
-        val published = mutableState.value
-        if (composeEnabled && published.showComposeOverlay && published.loadingDialog?.revision == revision) {
-            bootstrap.loadingDialogSceneHost.cancel(revision)
-        }
-    }
 
     private fun submit(action: () -> Unit) {
         scope.launch {
-            try { action() } finally { refresh(force = true) }
+            runCatching {
+                action()
+            }.also {
+                refresh(force = true)
+            }
         }
     }
 
@@ -236,7 +269,8 @@ internal class AppUiController(
         val loadingDialog = loadingHost.snapshot()
         val legacyOverlayVisible = dialogHost.isVisible && dialog == null
         val conditions = mainMenuConditions()
-        val modHud = UiRegistry.hudSnapshot().takeIf { AppScreenLayout.visibilityFor(screen).hud && it.layers.isNotEmpty() }
+        val modHud =
+            UiRegistry.hudSnapshot().takeIf { AppScreenLayout.visibilityFor(screen).hud && it.layers.isNotEmpty() }
         val snapshot = AppUiState(
             screen = screen,
             composeEnabled = composeEnabled,
@@ -268,7 +302,7 @@ internal class AppUiController(
         val previous = mutableState.value
         if (inGameOverlay != snapshot.inGameOverlay ||
             (screen == AppScreen.InGame &&
-                (dialog?.revision != previous.dialog?.revision || loadingDialog?.revision != previous.loadingDialog?.revision))
+                    (dialog?.revision != previous.dialog?.revision || loadingDialog?.revision != previous.loadingDialog?.revision))
         ) {
             inGameOverlay = snapshot.inGameOverlay
             refreshInGameOverlay(inGameOverlay)

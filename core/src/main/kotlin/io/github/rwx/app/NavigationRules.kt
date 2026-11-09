@@ -13,9 +13,6 @@ internal fun supportsBackgroundBattle(screen: AppScreen): Boolean =
 internal fun shouldShowResumeMenuBackground(screen: AppScreen, canResume: Boolean): Boolean =
     supportsBackgroundBattle(screen) && canResume
 
-internal fun shouldSetRwGameVisibleForScreen(screen: AppScreen): Boolean =
-    screen == InGame
-
 internal fun shouldPauseRwGameForScreen(
     screen: AppScreen,
     isResumeBackgroundVisible: Boolean,
@@ -31,9 +28,6 @@ internal fun shouldShowExternalRwBackgroundSurface(
             (isBackgroundBattleVisible ||
                     (isResumeBackgroundVisible && usesNativeSurfaceForResumeBackground))
 
-internal fun shouldHandleBattleRoomAction(screen: AppScreen): Boolean =
-    screen == BattleRoom
-
 
 internal fun shouldStartLiveBattleRoomInPlace(
     hasLaunchConfig: Boolean,
@@ -42,18 +36,6 @@ internal fun shouldStartLiveBattleRoomInPlace(
     isBattleRoomLive: Boolean,
 ): Boolean =
     !hasLaunchConfig && isHost && (isNetworkMultiplayer || isBattleRoomLive)
-
-internal fun shouldUseRwCanvasFrameForFrame(
-    isRwGameVisible: Boolean,
-    isBackgroundBattleVisible: Boolean,
-    isResumeBackgroundVisible: Boolean,
-    isRwGameLoading: Boolean,
-    isLastExternalFrameBackgroundVisible: Boolean,
-    usesFrameCommandRendering: Boolean,
-): Boolean = isBackgroundBattleVisible ||
-        isResumeBackgroundVisible ||
-        isLastExternalFrameBackgroundVisible ||
-        isRwGameVisible || (usesFrameCommandRendering && isRwGameLoading)
 
 internal fun shouldReturnToMainMenuAfterExternalGameClosed(
     isRwGameVisible: Boolean,

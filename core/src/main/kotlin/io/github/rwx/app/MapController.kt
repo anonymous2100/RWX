@@ -9,7 +9,7 @@ import io.github.rwx.map.MapMetadata
 import io.github.rwx.map.PortalTransferMessage
 import io.github.rwx.mod.registry.UiRegistry
 import io.github.rwx.p2p.P2PLobbyService
-import io.github.rwx.render.frame.GameViewport
+import io.github.rwx.geometry.Viewport
 import io.github.rwx.session.BattleRoomSnapshot
 import io.github.rwx.session.GameSession
 import io.github.rwx.session.MapSnapshot
@@ -23,7 +23,7 @@ import io.github.rwx.ui.model.DialogInfoRow
 internal class MapController(
     private val gameSession: GameSession,
     private val storage: () -> PlatformStorage?,
-    private val viewport: () -> GameViewport,
+    private val viewport: () -> Viewport,
     private val pendingStartMapPath: () -> String?,
     private val setPendingStart: (mapPath: String, failureReturnScreen: AppScreen) -> Unit,
     private val navigateToInGame: () -> Unit,

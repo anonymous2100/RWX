@@ -1,23 +1,20 @@
 package io.github.rwx.app
 
-import io.github.rwx.render.frame.GameFrame
-import io.github.rwx.render.frame.GameViewport
+import io.github.rwx.geometry.Viewport
 import io.github.rwx.session.GameSession
 import io.github.rwx.ui.AppScreen
 import io.github.rwx.ui.CoreUiEventQueue
 
 internal class FrameLoopInstaller(
-    private val viewportProvider: () -> GameViewport,
+    private val viewportProvider: () -> Viewport,
     private val scheduler: FrameScheduler,
     private val clock: FrameClock = SystemNanoFrameClock(),
     private val onFrame: () -> Unit,
     private val gameSession: GameSession,
     private val screenPresenter: ScreenPresenter,
-    private val warmupController: WarmupController,
+    private val startupPreparationController: StartupPreparationController,
     private val presenter: GameFramePresenter,
     private val currentScreen: () -> AppScreen,
-    private val lastExternalFrame: () -> GameFrame?,
-    private val setLastExternalFrame: (GameFrame) -> Unit,
     private val multiplayerLobbyController: MultiplayerLobbyController,
     private val battleRoomController: BattleRoomController,
     private val battleRoomLaunchController: BattleRoomLaunchController,
@@ -54,22 +51,20 @@ internal class FrameLoopInstaller(
             openInGameModWindow = sessionActions::openInGameModWindow,
             closeInGameModWindow = sessionActions::closeInGameModWindow,
             refreshMenuBackground = {
-                screenPresenter.apply(currentScreen(), lastExternalFrame())
+                screenPresenter.apply(currentScreen())
             },
             onBattleRoomClosed = onBattleRoomClosed,
         )
         val frameRenderController = FrameRenderController(
             gameSession = gameSession,
             shouldShowBackgroundBattle = screenPresenter::shouldShowBackgroundBattle,
-            warmupController = warmupController,
+            startupPreparationController = startupPreparationController,
             presenter = presenter,
-            lastExternalFrame = lastExternalFrame,
-            setLastExternalFrame = setLastExternalFrame,
         )
         val frameDriver = FrameDriver(
             gameSession = gameSession,
             currentScreen = currentScreen,
-            canvasViewport = { viewportProvider().resolved() },
+            canvasViewport = { viewportProvider() },
             coreEventDispatcher = coreEventDispatcher,
             updateController = updateController,
             battleRoomController = battleRoomController,

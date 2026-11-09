@@ -32,7 +32,7 @@ import io.github.rwx.geometry.RectF;
 import io.github.rwx.platform.CoreGameView;
 import io.github.rwx.render.canvas.ArgbColor;
 import io.github.rwx.render.canvas.BlendColorFilter;
-import io.github.rwx.render.frame.GameCanvasBlendMode;
+import io.github.rwx.render.canvas.CanvasBlendMode;
 import io.github.rwx.render.canvas.Paint;
 import io.github.rwx.ui.InGameMenuController;
 
@@ -119,7 +119,7 @@ public class GameInterfaceRenderer extends Serializable {
     static Paint staticPaint = new Paint();
 
     /* JADX INFO: renamed from: Z */
-    static BlendColorFilter staticColorFilter = new BlendColorFilter(ArgbColor.a(200, 255, 200), GameCanvasBlendMode.Multiply);
+    static BlendColorFilter staticColorFilter = new BlendColorFilter(ArgbColor.a(200, 255, 200), CanvasBlendMode.Multiply);
 
     /* JADX INFO: renamed from: aa */
     BaseUnit selectedUnit;

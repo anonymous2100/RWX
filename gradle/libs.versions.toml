@@ -1,5 +1,5 @@
 [versions]
-androidGradleVersion = "9.1.1"
+androidGradleVersion = "9.3.3"
 desugar_jdk_libsVersion = "2.1.5"
 httpclientVersion = "4.5.14"
 commonsCompressVersion = "1.28.0"

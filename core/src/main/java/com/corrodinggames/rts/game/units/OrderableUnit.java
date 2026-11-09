@@ -36,7 +36,7 @@ import io.github.rwx.geometry.PointF;
 import io.github.rwx.geometry.Rect;
 import io.github.rwx.geometry.RectF;
 import io.github.rwx.render.canvas.*;
-import io.github.rwx.render.frame.GameCanvasBlendMode;
+import io.github.rwx.render.canvas.CanvasBlendMode;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -371,10 +371,10 @@ public abstract class OrderableUnit extends UnitBase {
         aT = new MultiTurretPassiveTargetCallback(false);
         aV = new FastArrayList();
         aW = new PositionData();
-        overlayFilterLightGreen = new BlendColorFilter(ArgbColor.a(200, 255, 200), GameCanvasBlendMode.Multiply);
-        overlayFilterGreen = new BlendColorFilter(ArgbColor.a(70, 255, 70), GameCanvasBlendMode.Multiply);
-        overlayFilterRed = new BlendColorFilter(ArgbColor.a(255, 40, 40), GameCanvasBlendMode.Multiply);
-        overlayFilterBlue = new BlendColorFilter(ArgbColor.a(120, 120, 255), GameCanvasBlendMode.Multiply);
+        overlayFilterLightGreen = new BlendColorFilter(ArgbColor.a(200, 255, 200), CanvasBlendMode.Multiply);
+        overlayFilterGreen = new BlendColorFilter(ArgbColor.a(70, 255, 70), CanvasBlendMode.Multiply);
+        overlayFilterRed = new BlendColorFilter(ArgbColor.a(255, 40, 40), CanvasBlendMode.Multiply);
+        overlayFilterBlue = new BlendColorFilter(ArgbColor.a(120, 120, 255), CanvasBlendMode.Multiply);
         overlayPaint1 = GameViewUtils.b();
         overlayPaint2 = GameViewUtils.b();
         overlayPaint3 = GameViewUtils.b();

@@ -1,14 +1,14 @@
 package io.github.rwx.app
 
 import com.corrodinggames.rts.gameFramework.GameEngine
-import io.github.rwx.render.frame.GameViewport
+import io.github.rwx.geometry.Viewport
 import io.github.rwx.session.GameSession
 import io.github.rwx.ui.AppScreen
 
 internal class FrameDriver(
     private val gameSession: GameSession,
     private val currentScreen: () -> AppScreen,
-    private val canvasViewport: () -> GameViewport,
+    private val canvasViewport: () -> Viewport,
     private val coreEventDispatcher: CoreEventDispatcher,
     private val updateController: UpdateController,
     private val battleRoomController: BattleRoomController,

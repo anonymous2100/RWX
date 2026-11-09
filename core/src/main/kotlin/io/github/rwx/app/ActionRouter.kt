@@ -187,7 +187,7 @@ internal class ActionRouter(
     }
 
     private fun handleBattleRoomAction(action: BattleRoomAction) {
-        if (!shouldHandleBattleRoomAction(navigator.current)) {
+        if (navigator.current != AppScreen.BattleRoom) {
             return
         }
         val allowedAction = battleRoomController.resolveCurrentAction(action) ?: return

@@ -1,119 +1,68 @@
 package io.github.rwx.app
 
-import io.github.rwx.render.frame.*
+import io.github.rwx.geometry.Viewport
 import io.github.rwx.session.GameSession
 import io.github.rwx.ui.AppScreen
 
 internal class FrameRenderController(
     private val gameSession: GameSession,
     private val shouldShowBackgroundBattle: (AppScreen) -> Boolean,
-    private val warmupController: WarmupController,
+    private val startupPreparationController: StartupPreparationController,
     private val presenter: GameFramePresenter,
-    private val lastExternalFrame: () -> GameFrame?,
-    private val setLastExternalFrame: (GameFrame) -> Unit,
 ) {
     fun render(
         screen: AppScreen,
         isExternalBattleRoomJoinPending: Boolean,
         canResumeForFrame: Boolean,
-        canvasViewport: GameViewport,
+        canvasViewport: Viewport,
         deltaSeconds: Float,
     ) {
-        val isRwGameVisible = screen == AppScreen.InGame
-        val isBackgroundBattleVisible = !isExternalBattleRoomJoinPending &&
-                shouldShowBackgroundBattle(screen)
-        val isResumeBackgroundVisible = shouldShowResumeMenuBackground(
+        val source = FrameSource.from(
             screen = screen,
-            canResume = canResumeForFrame,
+            isExternalJoinPending = isExternalBattleRoomJoinPending,
+            shouldShowBackgroundBattle = shouldShowBackgroundBattle(screen),
+            isStartupMenuBackgroundLoading = startupPreparationController.isStartupMenuBackgroundLoading(screen),
+            isRwGameLoading = startupPreparationController.isRwGameLoading(screen),
+            canResumeForFrame = canResumeForFrame,
+            gameSession = gameSession,
         )
-        val isLastExternalFrameBackgroundVisible = supportsBackgroundBattle(screen) &&
-                !gameSession.usesFrameCommandRendering &&
-                lastExternalFrame() != null
-        val isStartupMenuBackgroundLoading = warmupController.isStartupMenuBackgroundLoading(screen)
-        val isRwGameLoading = warmupController.isRwGameLoading(screen)
-        val rwCanvasFrame = when {
-            isExternalBattleRoomJoinPending -> GameFrame(canvasViewport, emptyList())
-            isRwGameVisible -> gameSession.updateFrame(canvasViewport, deltaSeconds)
-            isBackgroundBattleVisible -> {
-                gameSession.updateFrame(
-                    canvasViewport,
-                    deltaSeconds,
-                    drainVisibleLayerBuffers = true,
-                )
-            }
+        when (source) {
+            FrameSource.RwGame ->
+                gameSession.updateFrame(canvasViewport, deltaSeconds)
 
-            isResumeBackgroundVisible -> {
+            FrameSource.BackgroundBattle ->
+                gameSession.updateFrame(canvasViewport, deltaSeconds, drainVisibleLayerBuffers = true)
+
+            FrameSource.ResumeBackground ->
                 resumeBackgroundFrameForSession(gameSession, canvasViewport, deltaSeconds)
+
+            FrameSource.RwGameLoading -> when {
+                startupPreparationController.isStartupMenuBackgroundLoading(screen) ->
+                    startupPreparationController.renderStartupMenuBackgroundLoadingFrame(canvasViewport, deltaSeconds)
+
+                startupPreparationController.isRwGameLoading(screen) ->
+                    startupPreparationController.renderRwGameLoadingFrame(canvasViewport, deltaSeconds)
+
+                else -> Unit
             }
 
-            isStartupMenuBackgroundLoading -> warmupController.renderStartupMenuBackgroundLoadingFrame(
-                canvasViewport,
-                deltaSeconds,
-            )
-
-            isRwGameLoading -> warmupController.renderRwGameLoadingFrame(
-                canvasViewport,
-                deltaSeconds,
-            )
-
-            else -> gameSession.currentFrame()
+            FrameSource.Empty -> Unit
         }
-        if (!gameSession.usesFrameCommandRendering && isRwGameVisible && rwCanvasFrame.commands.isNotEmpty()) {
-            setLastExternalFrame(rwCanvasFrame)
-        }
-        warmupController.updateLoadingStatus(screen)
-        val externalFrameBackground = if (isLastExternalFrameBackgroundVisible) {
-            val currentFrame = gameSession.currentFrame()
-            currentFrame.takeIf { it.commands.isNotEmpty() } ?: lastExternalFrame()
-        } else {
-            null
-        }
-        val shouldUseRwCanvasFrame = shouldUseRwCanvasFrameForFrame(
-            isRwGameVisible = isRwGameVisible,
-            isBackgroundBattleVisible = isBackgroundBattleVisible,
-            isResumeBackgroundVisible = isResumeBackgroundVisible,
-            isRwGameLoading = isRwGameLoading,
-            isLastExternalFrameBackgroundVisible = isLastExternalFrameBackgroundVisible,
-            usesFrameCommandRendering = gameSession.usesFrameCommandRendering,
-        )
-        presenter.present(
-            if (shouldUseRwCanvasFrame) {
-                val frame = externalFrameBackground ?: rwCanvasFrame
-                // Native backends own their surface clears. Only a command-rendered frame
-                // needs a fallback clear; otherwise it would cover the native game.
-                if (gameSession.usesFrameCommandRendering) frame.withDefaultSurfaceClear() else frame
-            } else {
-                GameFrame(canvasViewport, emptyList())
-            },
-        )
+        startupPreparationController.updateLoadingStatus(screen)
+        presenter.present()
     }
 }
 
 internal fun resumeBackgroundFrameForSession(
     gameSession: GameSession,
-    canvasViewport: GameViewport,
+    canvasViewport: Viewport,
     deltaSeconds: Float,
-): GameFrame =
-    if (gameSession.usesFrameCommandRendering) {
-        gameSession.currentFrame()
-    } else {
+) {
+    if (!gameSession.usesFrameCommandRendering) {
         gameSession.updateFrame(
             canvasViewport,
             deltaSeconds,
             drainVisibleLayerBuffers = true,
         )
     }
-
-internal fun GameFrame.withDefaultSurfaceClear(): GameFrame {
-    if (commands.any { it is GameCanvasCommand.Clear && it.renderTarget == null }) {
-        return this
-    }
-    return copy(
-        commands = listOf(
-            GameCanvasCommand.Clear(
-                color = GameCanvasColor(0xff000000.toInt()),
-                blendMode = GameCanvasBlendMode.Source,
-            ),
-        ) + commands,
-    )
 }

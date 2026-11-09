@@ -15,7 +15,7 @@ data class GameLoadingStatus(
 }
 
 data class GameSessionRendererProfile(
-    /** True for GameFrame command presentation; false when the platform owns a native surface. */
+    /** True for command-based presentation; false when the platform owns a native surface. */
     val usesFrameCommandRendering: Boolean = true,
     val canStartNewSessionInPlace: Boolean = false,
     val usesNativeSurfaceForResumeBackground: Boolean = false,

@@ -11,7 +11,7 @@ import io.github.rwx.PlatformStorage
 import io.github.rwx.geometry.Rect
 import io.github.rwx.geometry.RectF
 import io.github.rwx.render.canvas.Paint
-import io.github.rwx.render.frame.GameCanvasBlendMode
+import io.github.rwx.render.canvas.CanvasBlendMode
 import org.jetbrains.skia.Canvas
 import org.jetbrains.skia.EncodedImageFormat
 import org.jetbrains.skia.Image
@@ -200,20 +200,20 @@ class SkiaGraphicsEngine private constructor(
         if (texture != null && rectF != null) tile(texture, rectF.toSkia(), paint, f, f2, i, i2)
     }
 
-    override fun b(i: Int) = a(i, GameCanvasBlendMode.SourceOver)
-    override fun a(i: Int, mode: GameCanvasBlendMode?) {
-        val replaces = state == INITIAL_STATE && (mode == GameCanvasBlendMode.Clear ||
-                mode == GameCanvasBlendMode.ClearAlpha || mode == GameCanvasBlendMode.Source ||
-                (mode == null || mode == GameCanvasBlendMode.SourceOver) && i ushr 24 == 255)
+    override fun b(i: Int) = a(i, CanvasBlendMode.SourceOver)
+    override fun a(i: Int, mode: CanvasBlendMode?) {
+        val replaces = state == INITIAL_STATE && (mode == CanvasBlendMode.Clear ||
+                mode == CanvasBlendMode.ClearAlpha || mode == CanvasBlendMode.Source ||
+                (mode == null || mode == CanvasBlendMode.SourceOver) && i ushr 24 == 255)
         withCanvas(replaceContents = replaces) { canvas ->
             val paint = paints.configure(
                 null, colorOverride = i,
-                blendOverride = (mode ?: GameCanvasBlendMode.SourceOver).toSkia()
+                blendOverride = (mode ?: CanvasBlendMode.SourceOver).toSkia()
             )
             canvas.drawPaint(paint)
         }
-        if (replaces && (mode == GameCanvasBlendMode.Clear || mode == GameCanvasBlendMode.ClearAlpha ||
-                    mode == GameCanvasBlendMode.Source && i ushr 24 == 0)
+        if (replaces && (mode == CanvasBlendMode.Clear || mode == CanvasBlendMode.ClearAlpha ||
+                    mode == CanvasBlendMode.Source && i ushr 24 == 0)
         ) target?.markCleared()
     }
 
@@ -358,7 +358,7 @@ class SkiaGraphicsEngine private constructor(
         }
     }
 
-    override fun o() = a(0, GameCanvasBlendMode.Clear)
+    override fun o() = a(0, CanvasBlendMode.Clear)
     override fun p() {
         checkOpen(); target?.flush()
     }
@@ -449,12 +449,11 @@ class SkiaGraphicsEngine private constructor(
             target?.recordingEnabled == true && target !== resolved &&
             srcLeft >= 0f && srcTop >= 0f && srcRight <= image.width && srcBottom <= image.height &&
             unambiguousSampling(left, right, srcRight - srcLeft) &&
-            unambiguousSampling(top, bottom, srcBottom - srcTop) &&
-            target?.recordImage(
+            unambiguousSampling(top, bottom, srcBottom - srcTop) && target.recordImage(
                 image, paints.configure(paint, image = true), paints.version, paints.canBatchImages,
                 srcLeft, srcTop, srcRight, srcBottom,
                 left, top, right, bottom,
-            ) == true
+            )
         ) return
         // Resolve every shader input before beginning a destination batch. A sampler
         // may read this same target; finishing its picture while its canvas is in use

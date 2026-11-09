@@ -4,7 +4,7 @@ import io.github.rwx.ui.AppScreen
 
 internal class StartupController(
     private val battleRoomController: BattleRoomController,
-    private val warmupController: WarmupController,
+    private val startupPreparationController: StartupPreparationController,
 ) {
     fun start(targetScreen: AppScreen) {
         val startupWarmupMapPath = when (targetScreen) {
@@ -18,7 +18,7 @@ internal class StartupController(
 
             else -> null
         }
-        warmupController.request(
+        startupPreparationController.request(
             mapPath = startupWarmupMapPath,
             targetScreen = targetScreen,
         )

@@ -18,8 +18,7 @@ import io.github.rwx.app.launchOnIO
 import io.github.rwx.geometry.Point
 import io.github.rwx.input.MultiTouchPointerState
 import io.github.rwx.platform.CoreGameView
-import io.github.rwx.render.frame.GameFrame
-import io.github.rwx.render.frame.GameViewport
+import io.github.rwx.geometry.Viewport
 import io.github.rwx.session.GameSession
 import io.github.rwx.session.GameSessionRendererProfile
 import io.github.rwx.ui.BattleRoomUiBridge
@@ -41,7 +40,7 @@ internal class AndroidGameSession(
     private var visibilityUpdate: Runnable? = null
     private var framePresenter: AndroidFramePresenter? = null
     private var graphicsEngine: AndroidGraphicsEngine? = null
-    private var appliedViewport: GameViewport = GameViewport(0, 0)
+    private var appliedViewport: Viewport = Viewport(0, 0)
     private var appliedRenderSurfaceScale: Float = 0f
 
     @Volatile
@@ -93,8 +92,8 @@ internal class AndroidGameSession(
         activity.lifecycle.addObserver(observer)
     }
 
-    fun viewport(): GameViewport =
-        GameViewport(framePresenter?.view?.width ?: 0, framePresenter?.view?.height ?: 0).resolved()
+    fun viewport(): Viewport =
+        Viewport(framePresenter?.view?.width ?: 0, framePresenter?.view?.height ?: 0)
 
     private fun matchParentLayoutParams() = FrameLayout.LayoutParams(
         FrameLayout.LayoutParams.MATCH_PARENT,
@@ -133,7 +132,7 @@ internal class AndroidGameSession(
                     TileMap.bindGraphicsBackend(replacement)
                 }
             }
-            appliedViewport = GameViewport(0, 0)
+            appliedViewport = Viewport(0, 0)
             appliedRenderSurfaceScale = 0f
 
             val presenter = createPresenter(activity)
@@ -192,7 +191,7 @@ internal class AndroidGameSession(
             host = null
             composeView = null
             visibilityRequestInitialized = false
-            appliedViewport = GameViewport(0, 0)
+            appliedViewport = Viewport(0, 0)
             appliedRenderSurfaceScale = 0f
             resumeBackgroundFrameReady = false
             view.clearTouchSnapshot()
@@ -224,12 +223,12 @@ internal class AndroidGameSession(
     }
 
     override fun updateFrame(
-        viewport: GameViewport,
+        viewport: Viewport,
         deltaSeconds: Float,
         drainVisibleLayerBuffers: Boolean,
-    ): GameFrame {
+    ) {
         if (loadState.asyncMapLoadInProgress || modReloadInProgress) {
-            return lastFrame
+            return
         }
         if (loadState.menuBackgroundActive && (!requestedGameVisible || !requestedOverlay)) {
             setGameVisible(true, viewport, uiOverlay = true)
@@ -244,23 +243,23 @@ internal class AndroidGameSession(
             val androidGraphics = graphicsEngine
             if (presenter == null || androidGraphics == null || !presenter.isReady()) {
                 if (pausedForResumeBackground) {
-                    return lastFrame
+                    return
                 }
                 runGameLoop(engine, deltaSeconds, skipDraw = true)
-                return lastFrame
+                return
             }
 
             if (pausedForResumeBackground && resumeBackgroundFrameReady) {
-                return lastFrame
+                return
             }
 
             val frame = presenter.acquireFrame()
             if (frame == null) {
                 if (pausedForResumeBackground) {
-                    return lastFrame
+                    return
                 }
                 runGameLoop(engine, deltaSeconds, skipDraw = true)
-                return lastFrame
+                return
             }
             var submitFrame = false
             try {
@@ -282,11 +281,9 @@ internal class AndroidGameSession(
                     frame.cancel()
                 }
             }
-            lastFrame = GameFrame(viewport, emptyList())
             if (pausedForResumeBackground) {
                 resumeBackgroundFrameReady = true
             }
-            return lastFrame
         }
     }
 
@@ -318,9 +315,7 @@ internal class AndroidGameSession(
         }
     }
 
-    override fun currentFrame(): GameFrame = lastFrame
-
-    override fun prepareMenuBackgroundAsync(viewport: GameViewport) {
+    override fun prepareMenuBackgroundAsync(viewport: Viewport) {
         val state = loadState
         if (state.menuBackgroundActive) {
             return
@@ -343,7 +338,6 @@ internal class AndroidGameSession(
             }
         }
         val issuedGeneration = generation ?: return
-        lastFrame = GameFrame(viewport, emptyList())
         logger.info { "Preparing Android Canvas RW menu background asynchronously" }
         launchOnIO("${renderBackend.name.lowercase()}-menu-background-loader") {
             loadMenuBackgroundInBackground(viewport, issuedGeneration)
@@ -356,7 +350,7 @@ internal class AndroidGameSession(
                 (state.asyncMapLoadInProgress && state.asyncMapLoadPath == MENU_BACKGROUND_REQUEST)
     }
 
-    override fun adoptStartedGameFromEngine(viewport: GameViewport): Boolean =
+    override fun adoptStartedGameFromEngine(viewport: Viewport): Boolean =
         synchronized(gameLock) {
             val engine = gameEngine ?: GameEngine.getInstance() ?: return@synchronized false
             if (engine.networkEngine?.gameHasBeenStarted != true) return@synchronized false
@@ -392,12 +386,11 @@ internal class AndroidGameSession(
         view.submitPointer(0f, 0f, false, -1)
     }
 
-    override fun loadPendingMapNow(): GameFrame =
-        updateFrame(lastViewport, 0f)
+    override fun loadPendingMapNow() = updateFrame(lastViewport, 0f)
 
     override fun setGameVisible(
         visible: Boolean,
-        viewport: GameViewport,
+        viewport: Viewport,
         uiOverlay: Boolean,
         pausedBackground: Boolean,
     ) {
@@ -464,13 +457,12 @@ internal class AndroidGameSession(
         }
     }
 
-    override fun ensureStarted(viewport: GameViewport): GameEngine {
+    override fun ensureStarted(viewport: Viewport): GameEngine {
         gameEngine?.let { return it }
         val androidGraphics = graphicsEngine
             ?: throw IllegalStateException("Android Canvas session is not attached")
-        val resolvedViewport = viewport.resolved()
-        val width = resolvedViewport.width
-        val height = resolvedViewport.height
+        val width = viewport.width
+        val height = viewport.height
         GameEngine.screenSize = Point(width, height)
         GameEngine.graphicsEngine = androidGraphics
         GameEngine.externalGameLoopDriver = true
@@ -482,10 +474,9 @@ internal class AndroidGameSession(
         return engine
     }
 
-    override fun applyViewport(engine: GameEngine, viewport: GameViewport) {
-        val resolvedViewport = viewport.resolved()
-        val physicalWidth = resolvedViewport.width
-        val physicalHeight = resolvedViewport.height
+    override fun applyViewport(engine: GameEngine, viewport: Viewport) {
+        val physicalWidth = viewport.width
+        val physicalHeight = viewport.height
         val doubleScale = engine.settingsEngine.renderDoubleScale
         val renderSurfaceScale = if (doubleScale) 2f else 1f
         val logicalWidth = if (doubleScale) (physicalWidth / 2).coerceAtLeast(1) else physicalWidth
@@ -499,11 +490,11 @@ internal class AndroidGameSession(
         engine.updateWindowResolution(logicalWidth, logicalHeight, renderSurfaceScale)
         graphicsEngine?.a(logicalWidth, logicalHeight)
         view.onSizeChanged()
-        appliedViewport = GameViewport(physicalWidth, physicalHeight)
+        appliedViewport = Viewport(physicalWidth, physicalHeight)
         appliedRenderSurfaceScale = renderSurfaceScale
     }
 
-    private fun loadMenuBackgroundInBackground(requestedViewport: GameViewport, generation: Long) {
+    private fun loadMenuBackgroundInBackground(requestedViewport: Viewport, generation: Long) {
         val startedAt = System.nanoTime()
         var loadedCurrentRequest = false
         runCatching {

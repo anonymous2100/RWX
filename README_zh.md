@@ -1,6 +1,10 @@
 <div style="text-align: center;">
 
-![Banner](logo.svg)
+![logo](logo.svg)
+
+# Rusted Warfare eXtension
+
+重建和扩展 Rusted Warfare 的开源跨平台 RTS 游戏
 
 ----
 
@@ -12,15 +16,11 @@
 [![Downloads](https://img.shields.io/github/downloads/yomi2539/RWX/total?style=flat-square&color=e74c3c)](https://github.com/yomi2539/RWX/releases)
 [![Netlify Status](https://api.netlify.com/api/v1/badges/5c73d6b0-e2f9-46d7-a0d2-271b8f81b6b2/deploy-status)](https://app.netlify.com/projects/rwx-docs/deploys)
 
-**R**usted **W**arfare e**X**tension
-
-重建和扩展 Rusted Warfare 的开源跨平台 RTS 游戏
-
 </div>
 
-> **项目状态**: 当前项目仍在积极维护中，欢迎提交 Issue 和 Pull Request。
-
 简体中文, [English](README.md)
+
+> **项目状态**: 当前项目仍在积极维护中，欢迎提交 Issue 和 Pull Request。
 
 ## 亮点
 

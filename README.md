@@ -1,6 +1,10 @@
 <div style="text-align: center;">
 
-![Banner](logo.svg)
+![logo](logo.svg)
+
+# Rusted Warfare eXtension
+
+Rebuilding and extending Rusted Warfare as an open-source cross-platform RTS game
 
 ----
 
@@ -11,15 +15,11 @@
 [![Downloads](https://img.shields.io/github/downloads/yomi2539/RWX/total?style=flat-square&color=e74c3c)](https://github.com/yomi2539/RWX/releases)
 [![Netlify Status](https://api.netlify.com/api/v1/badges/5c73d6b0-e2f9-46d7-a0d2-271b8f81b6b2/deploy-status)](https://app.netlify.com/projects/rwx-docs/deploys)
 
-**R**usted **W**arfare e**X**tension
-
-Rebuilding and extending Rusted Warfare as an open-source cross-platform RTS game
-
 </div>
 
-> **Project Status**: Actively maintained. Issues and pull requests are welcome.
-
 English, [简体中文](README_zh.md)
+
+> **Project Status**: Actively maintained. Issues and pull requests are welcome.
 
 ## Highlights
 

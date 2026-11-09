@@ -1,24 +1,22 @@
 package io.github.rwx.app
 
 import io.github.rwx.logger
-import io.github.rwx.render.frame.GameFrame
-import io.github.rwx.render.frame.GameViewport
+import io.github.rwx.geometry.Viewport
 import io.github.rwx.session.GameSession
 import io.github.rwx.ui.AppScreen
 import io.github.rwx.ui.host.LoadingSceneHost
 
-internal class WarmupController(
+internal class StartupPreparationController(
     private val gameSession: GameSession,
     private val menuBackgroundSession: GameSession,
     private val loadingSceneHost: LoadingSceneHost,
     private val navigateTo: (AppScreen) -> Unit,
-    private val clearExternalFrame: () -> Unit,
     private val isBackgroundBattleDemoEnabled: () -> Boolean,
 ) {
     private var pendingRwGameLoad = false
     private var warmingRwMapPath: String? = null
     private var deferRwWarmupUntilNextFrame = false
-    private var pendingRwPreparation: ((GameViewport) -> Unit)? = null
+    private var pendingRwPreparation: ((Viewport) -> Unit)? = null
     private var pendingWarmupStartedAtNanos: Long? = null
     private var pendingWarmupTarget: AppScreen = AppScreen.InGame
     private var pendingStartupMenuBackgroundLoad = false
@@ -28,7 +26,6 @@ internal class WarmupController(
     private var startupMenuBackgroundReadyFramePending = false
 
     fun request(mapPath: String?, targetScreen: AppScreen) {
-        clearExternalFrame()
         if (mapPath == null && targetScreen == AppScreen.MainMenu) {
             warmingRwMapPath = null
             pendingRwGameLoad = false
@@ -108,12 +105,12 @@ internal class WarmupController(
         screen == AppScreen.Loading && pendingRwGameLoad
 
     fun renderStartupMenuBackgroundLoadingFrame(
-        canvasViewport: GameViewport,
+        canvasViewport: Viewport,
         deltaSeconds: Float,
-    ): GameFrame {
+    ) {
         if (deferStartupMenuBackgroundUntilNextFrame) {
             deferStartupMenuBackgroundUntilNextFrame = false
-            return GameFrame(canvasViewport, emptyList())
+            return
         }
         if (pendingStartupMenuBackgroundPreparation) {
             pendingStartupMenuBackgroundPreparation = false
@@ -124,7 +121,7 @@ internal class WarmupController(
             logger.warn(loadError) { "Unable to prepare RW menu background" }
             pendingStartupMenuBackgroundLoad = false
             navigateTo(AppScreen.MainMenu)
-            return GameFrame(canvasViewport, emptyList())
+            return
         }
         if (!menuBackgroundSession.usesFrameCommandRendering && !startupMenuBackgroundSurfaceVisible) {
             menuBackgroundSession.setGameVisible(
@@ -134,7 +131,7 @@ internal class WarmupController(
             )
             startupMenuBackgroundSurfaceVisible = true
         }
-        val frame = menuBackgroundSession.updateFrame(
+        menuBackgroundSession.updateFrame(
             canvasViewport,
             deltaSeconds,
             drainVisibleLayerBuffers = true,
@@ -153,25 +150,24 @@ internal class WarmupController(
         } else {
             startupMenuBackgroundReadyFramePending = false
         }
-        return frame
     }
 
     fun renderRwGameLoadingFrame(
-        canvasViewport: GameViewport,
+        canvasViewport: Viewport,
         deltaSeconds: Float,
-    ): GameFrame {
+    ) {
         if (deferRwWarmupUntilNextFrame) {
             deferRwWarmupUntilNextFrame = false
-            return GameFrame(canvasViewport, emptyList())
+            return
         }
         pendingRwPreparation?.let { prepare ->
             pendingRwPreparation = null
             prepare(canvasViewport)
-            return GameFrame(canvasViewport, emptyList())
+            return
         }
         if (warmingRwMapPath == null) {
             if (gameSession.isPreparingEngine()) {
-                return GameFrame(canvasViewport, emptyList())
+                return
             }
             val gameEngine = gameSession.preload(canvasViewport)
             gameEngine.settingsEngine.numIncompleteLoadAttempts = 0
@@ -179,33 +175,30 @@ internal class WarmupController(
             gameEngine.settingsEngine.save()
             pendingRwGameLoad = false
             navigateTo(pendingWarmupTarget)
-            return GameFrame(canvasViewport, emptyList())
+            return
         }
         if (!gameSession.usesFrameCommandRendering) {
             pendingRwGameLoad = false
             warmingRwMapPath = null
             navigateTo(pendingWarmupTarget)
-            return GameFrame(canvasViewport, emptyList())
+            return
         }
         val warmingMap = warmingRwMapPath
-        return if (gameSession.isPreparingMap(warmingMap)) {
-            gameSession.currentFrame()
-        } else {
+        if (!gameSession.isPreparingMap(warmingMap)) {
             gameSession.updateFrame(
                 canvasViewport,
                 deltaSeconds,
                 drainVisibleLayerBuffers = true,
             )
-        }.also {
-            val warmupStartedAt = pendingWarmupStartedAtNanos ?: System.nanoTime().also { now ->
-                pendingWarmupStartedAtNanos = now
-            }
-            val warmupElapsedSeconds = (System.nanoTime() - warmupStartedAt) / 1_000_000_000.0
-            if (gameSession.isReadyForDisplay(warmingMap) || warmupElapsedSeconds >= 15.0) {
-                pendingRwGameLoad = false
-                warmingRwMapPath = null
-                navigateTo(pendingWarmupTarget)
-            }
+        }
+        val warmupStartedAt = pendingWarmupStartedAtNanos ?: System.nanoTime().also { now ->
+            pendingWarmupStartedAtNanos = now
+        }
+        val warmupElapsedSeconds = (System.nanoTime() - warmupStartedAt) / 1_000_000_000.0
+        if (gameSession.isReadyForDisplay(warmingMap) || warmupElapsedSeconds >= 15.0) {
+            pendingRwGameLoad = false
+            warmingRwMapPath = null
+            navigateTo(pendingWarmupTarget)
         }
     }
 

@@ -12,8 +12,7 @@ import io.github.rwx.platform.CoreGameView
 import io.github.rwx.render.RenderBackend
 import io.github.rwx.render.SkiaGraphicsEngine
 import io.github.rwx.render.canvas.Paint
-import io.github.rwx.render.frame.GameFrame
-import io.github.rwx.render.frame.GameViewport
+import io.github.rwx.geometry.Viewport
 import io.github.rwx.session.GameSession
 import io.github.rwx.session.GameSessionRendererProfile
 import io.github.rwx.session.BattleRoomLaunchConfig
@@ -85,7 +84,7 @@ class SkiaGameSession(
         val startNanos = if (probeOn) System.nanoTime() else 0L
         synchronized(gameLock) {
             if (closed.get() || isEngineBusyForUiReads()) return
-            val viewport = GameViewport(width.coerceAtLeast(1), height.coerceAtLeast(1))
+            val viewport = Viewport(width.coerceAtLeast(1), height.coerceAtLeast(1))
             lastViewport = viewport
             val engine = ensureStarted(viewport)
             applyViewport(engine, viewport)
@@ -119,32 +118,29 @@ class SkiaGameSession(
                     logger.warn(error) { "Skia frame render failed; skipping frame" }
                 }
             }
-            lastFrame = GameFrame(viewport, emptyList())
         }
         if (probeOn) frameProbe.frame(System.nanoTime() - startNanos)
     }
 
     override fun updateFrame(
-        viewport: GameViewport,
+        viewport: Viewport,
         deltaSeconds: Float,
         drainVisibleLayerBuffers: Boolean,
-    ): GameFrame {
-        if (closed.get() || isEngineBusyForUiReads()) return lastFrame
+    ) {
+        if (closed.get() || isEngineBusyForUiReads()) return
         synchronized(gameLock) {
-            if (closed.get() || isEngineBusyForUiReads()) return lastFrame
+            if (closed.get() || isEngineBusyForUiReads()) return
             val resolved = viewport.takeIf { it.width > 0 && it.height > 0 }
-                ?: GameViewport(1280, 720)
+                ?: Viewport(1280, 720)
             lastViewport = resolved
             val engine = ensureStarted(resolved)
             applyViewport(engine, resolved)
             loadPendingMap(engine)
             drainInput(engine)
-            lastFrame = GameFrame(resolved, emptyList())
-            return lastFrame
         }
     }
 
-    override fun adoptStartedGameFromEngine(viewport: GameViewport): Boolean {
+    override fun adoptStartedGameFromEngine(viewport: Viewport): Boolean {
         return !(closed.get() || isEngineBusyForUiReads()) && synchronized(gameLock) {
             if (closed.get() || isEngineBusyForUiReads()) return@synchronized false
             val engine = gameEngine ?: GameEngine.getInstance() ?: return@synchronized false
@@ -180,18 +176,16 @@ class SkiaGameSession(
         }
     }
 
-    override fun currentFrame(): GameFrame = lastFrame
-
     override fun canResume(): Boolean = !closed.get() && super.canResume()
 
     override fun isMapLoaded(mapPath: String?): Boolean = !closed.get() && super.isMapLoaded(mapPath)
 
-    override fun preload(viewport: GameViewport): GameEngine {
+    override fun preload(viewport: Viewport): GameEngine {
         check(!closed.get()) { "Game session is closed" }
         return super.preload(viewport)
     }
 
-    override fun prepareEngineAsync(viewport: GameViewport) {
+    override fun prepareEngineAsync(viewport: Viewport) {
         if (!closed.get()) super.prepareEngineAsync(viewport)
     }
 
@@ -203,23 +197,23 @@ class SkiaGameSession(
         if (!closed.get()) super.requestMapSnapshot(snapshot)
     }
 
-    override fun prepareMapAsync(mapPath: String?, viewport: GameViewport) {
+    override fun prepareMapAsync(mapPath: String?, viewport: Viewport) {
         if (!closed.get()) super.prepareMapAsync(mapPath, viewport)
     }
 
-    override fun prepareSavedGameAsync(saveName: String, viewport: GameViewport) {
+    override fun prepareSavedGameAsync(saveName: String, viewport: Viewport) {
         if (!closed.get()) super.prepareSavedGameAsync(saveName, viewport)
     }
 
-    override fun prepareMapSnapshotAsync(snapshot: MapSnapshot, viewport: GameViewport) {
+    override fun prepareMapSnapshotAsync(snapshot: MapSnapshot, viewport: Viewport) {
         if (!closed.get()) super.prepareMapSnapshotAsync(snapshot, viewport)
     }
 
-    override fun prepareReplayAsync(replayName: String, viewport: GameViewport) {
+    override fun prepareReplayAsync(replayName: String, viewport: Viewport) {
         if (!closed.get()) super.prepareReplayAsync(replayName, viewport)
     }
 
-    override fun prepareBattleRoomAsync(config: BattleRoomLaunchConfig, viewport: GameViewport) {
+    override fun prepareBattleRoomAsync(config: BattleRoomLaunchConfig, viewport: Viewport) {
         if (!closed.get()) super.prepareBattleRoomAsync(config, viewport)
     }
 
@@ -230,10 +224,9 @@ class SkiaGameSession(
         }
     }
 
-    override fun loadPendingMapNow(): GameFrame =
-        updateFrame(lastViewport, 0f)
+    override fun loadPendingMapNow() = updateFrame(lastViewport, 0f)
 
-    override fun prepareMenuBackgroundAsync(viewport: GameViewport) {
+    override fun prepareMenuBackgroundAsync(viewport: Viewport) {
         if (closed.get()) return
         val state = loadState
         if (state.menuBackgroundActive) return
@@ -253,29 +246,28 @@ class SkiaGameSession(
             }
         }
         val issuedGeneration = generation ?: return
-        lastFrame = GameFrame(viewport, emptyList())
         logger.info { "Preparing desktop-skia menu background asynchronously" }
         launchOnIO("desktop-skia-menu-background-loader") {
             loadMenuBackgroundInBackground(viewport, issuedGeneration)
         }
     }
 
-    override fun ensureStarted(viewport: GameViewport): GameEngine {
+    override fun ensureStarted(viewport: Viewport): GameEngine {
         check(!closed.get()) { "Game session is closed" }
         synchronized(gameLock) {
             check(!closed.get()) { "Game session is closed" }
             activeEngineLocked()?.let { return it }
             val resolved = viewport.takeIf { it.width > 0 && it.height > 0 }
-                ?: GameViewport(1280, 720)
+                ?: Viewport(1280, 720)
             return ensureRendererEngine(resolved, graphics, view, null)
         }
     }
 
-    override fun applyViewport(engine: GameEngine, viewport: GameViewport) {
+    override fun applyViewport(engine: GameEngine, viewport: Viewport) {
         check(!closed.get()) { "Game session is closed" }
         val width = viewport.width.coerceAtLeast(1)
         val height = viewport.height.coerceAtLeast(1)
-        lastViewport = GameViewport(width, height)
+        lastViewport = Viewport(width, height)
         engine.updateWindowResolution(width, height)
         graphics.a(width, height)
         view.onSizeChanged()
@@ -283,7 +275,7 @@ class SkiaGameSession(
 
     override fun setGameVisible(
         visible: Boolean,
-        viewport: GameViewport,
+        viewport: Viewport,
         uiOverlay: Boolean,
         pausedBackground: Boolean,
     ) {
@@ -351,20 +343,19 @@ class SkiaGameSession(
             view.submitPointer(0f, 0f, false, -1)
             view.stopRender()
             gameEngine?.clearInputState()
-            lastFrame = GameFrame(lastViewport, emptyList())
             runCatching { graphics.close() }
                 .onFailure { error -> logger.warn(error) { "Failed to close the Skia graphics engine" } }
         }
     }
 
-    private fun loadMenuBackgroundInBackground(requestedViewport: GameViewport, generation: Long) {
+    private fun loadMenuBackgroundInBackground(requestedViewport: Viewport, generation: Long) {
         val startedAt = System.nanoTime()
         var loadedCurrentRequest = false
         runCatching {
             synchronized(gameLock) {
                 if (closed.get() || generation != loadState.mapLoadGeneration) return@synchronized
                 val viewport = requestedViewport.takeIf { it.width > 0 && it.height > 0 }
-                    ?: GameViewport(1280, 720)
+                    ?: Viewport(1280, 720)
                 lastViewport = viewport
                 val engine = ensureStarted(viewport)
                 applyViewport(engine, viewport)

@@ -8,7 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.ComposePanel
 import com.corrodinggames.rts.gameFramework.SettingsEngine
 import io.github.rwx.app.AppSession
-import io.github.rwx.render.frame.GameViewport
+import io.github.rwx.geometry.Viewport
 import io.github.rwx.slick.SlickAwtGLCanvas
 import io.github.rwx.slick.SlickCanvasHost
 import io.github.rwx.slick.SlickFrameSnapshot
@@ -75,7 +75,7 @@ class SwingAppHost private constructor(
     val closeCompletion: java.util.concurrent.CompletionStage<Unit> get() = closed
 
     @Volatile
-    var viewport: GameViewport = GameViewport(1280, 720)
+    var viewport: Viewport = Viewport(1280, 720)
         private set
 
     init {
@@ -201,7 +201,7 @@ class SwingAppHost private constructor(
         composeTexturePanel.setBounds(0, 0, width, height)
         composeTexturePanel.doLayout()
         val scale = gameCanvas.graphicsConfiguration?.defaultTransform
-        viewport = GameViewport(
+        viewport = Viewport(
             (width * (scale?.scaleX ?: 1.0)).toInt().coerceAtLeast(1),
             (height * (scale?.scaleY ?: 1.0)).toInt().coerceAtLeast(1),
         )

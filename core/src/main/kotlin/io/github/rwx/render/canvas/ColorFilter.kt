@@ -1,12 +1,10 @@
 package io.github.rwx.render.canvas
 
-import io.github.rwx.render.frame.*
-
 open class ColorFilter
 
 class BlendColorFilter(
     @JvmField val color: Int,
-    @JvmField val blendMode: GameCanvasBlendMode,
+    @JvmField val blendMode: CanvasBlendMode,
 ) : ColorFilter()
 
 class MultiplyAddColorFilter(

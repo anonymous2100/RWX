@@ -7,8 +7,8 @@ import io.github.rwx.DesktopRenderBackend
 import io.github.rwx.PlatformStorage
 import io.github.rwx.logger
 import io.github.rwx.platform.CoreGameView
+import io.github.rwx.geometry.Viewport
 import io.github.rwx.render.RenderBackend
-import io.github.rwx.render.frame.*
 import io.github.rwx.session.*
 import io.github.rwx.ui.CoreUiEventQueue
 import java.awt.Canvas
@@ -47,7 +47,7 @@ class SlickGameSession(
     fun activeGame(): SlickGame? = if (running.get()) game else null
 
     @Volatile
-    private var lastSlickViewport: GameViewport = GameViewport(1280, 720)
+    private var lastSlickViewport: Viewport = Viewport(1280, 720)
 
     private val frameSnapshotState =
         AtomicReference<SlickFrameSnapshot?>(null)
@@ -82,7 +82,7 @@ class SlickGameSession(
     fun start(
         canvas: Canvas,
         request: SlickSessionRequest,
-        viewport: GameViewport,
+        viewport: Viewport,
         visible: Boolean,
         pausedBackground: Boolean,
     ): SlickGame {
@@ -232,7 +232,7 @@ class SlickGameSession(
         }
     }
     override fun ensureRendererEngine(
-        viewport: GameViewport,
+        viewport: Viewport,
         graphicsEngine: GraphicsEngine,
         view: CoreGameView,
         platformCallbacks: PlatformCallbacks?,
@@ -248,7 +248,7 @@ class SlickGameSession(
             signalEngineStartup()
         }.getOrThrow()
 
-    override fun prepareMapAsync(mapPath: String?, viewport: GameViewport) {
+    override fun prepareMapAsync(mapPath: String?, viewport: Viewport) {
         val requestedMapPath = mapPath?.takeIf { it.isNotBlank() } ?: return
         if (isMapLoaded(requestedMapPath)) return
         beginRendererMapPreparation(requestedMapPath)
@@ -259,7 +259,7 @@ class SlickGameSession(
         startSlickGameIfNeeded()
     }
 
-    override fun prepareSavedGameAsync(saveName: String, viewport: GameViewport) {
+    override fun prepareSavedGameAsync(saveName: String, viewport: Viewport) {
         val requestedSaveName = saveName.takeIf { it.isNotBlank() } ?: return
         if (isMapLoaded(requestedSaveName)) return
         beginRendererMapPreparation(requestedSaveName)
@@ -270,7 +270,7 @@ class SlickGameSession(
         startSlickGameIfNeeded()
     }
 
-    override fun prepareMapSnapshotAsync(snapshot: MapSnapshot, viewport: GameViewport) {
+    override fun prepareMapSnapshotAsync(snapshot: MapSnapshot, viewport: Viewport) {
         if (isMapLoaded(snapshot.mapPath)) return
         beginRendererMapPreparation(
             mapPath = snapshot.mapPath,
@@ -284,7 +284,7 @@ class SlickGameSession(
         startSlickGameIfNeeded()
     }
 
-    override fun prepareBattleRoomAsync(config: BattleRoomLaunchConfig, viewport: GameViewport) {
+    override fun prepareBattleRoomAsync(config: BattleRoomLaunchConfig, viewport: Viewport) {
         val requestedMapPath = config.room.mapPath.takeIf { it.isNotBlank() } ?: return
         if (isMapLoaded(requestedMapPath) && activeRendererBattleRoomConfig() == config) return
         beginRendererMapPreparation(
@@ -299,32 +299,28 @@ class SlickGameSession(
     }
 
    override fun updateFrame(
-        viewport: GameViewport,
-        deltaSeconds: Float,
-        drainVisibleLayerBuffers: Boolean,
-    ): GameFrame {
+       viewport: Viewport,
+       deltaSeconds: Float,
+       drainVisibleLayerBuffers: Boolean,
+   ) {
        lastSlickViewport = normalizedViewport(viewport)
        lastViewport = lastSlickViewport
        syncRequestedMapFromSession()
         startSlickGameIfNeeded()
         pollSlickFrameSnapshot()
         activeGame()?.let(textInputBridge::poll)
-        return currentFrame()
     }
 
     // Pixels belong to Slick, not to a cross-renderer texture registry.
     internal fun currentSnapshot(): SlickFrameSnapshot? = activeGame()?.currentFrameSnapshot() ?: frameSnapshotState.get()
 
-    override fun currentFrame(): GameFrame = emptyFrameFor(lastSlickViewport)
-
-    override fun loadPendingMapNow(): GameFrame {
+    override fun loadPendingMapNow() {
         syncRequestedMapFromSession()
         startSlickGameIfNeeded()
         pollSlickFrameSnapshot()
-        return currentFrame()
     }
 
-    protected override fun ensureStarted(viewport: GameViewport): GameEngine {
+    protected override fun ensureStarted(viewport: Viewport): GameEngine {
         synchronized(gameLock) {
             activeEngineLocked()?.let { return it }
         }
@@ -378,7 +374,7 @@ class SlickGameSession(
         }
     }
 
-    protected override fun applyViewport(engine: GameEngine, viewport: GameViewport) {
+    protected override fun applyViewport(engine: GameEngine, viewport: Viewport) {
         val requestedViewport = normalizedViewport(viewport)
         lastSlickViewport = requestedViewport
         lastViewport = requestedViewport
@@ -475,7 +471,7 @@ class SlickGameSession(
 
     override fun setGameVisible(
         visible: Boolean,
-        viewport: GameViewport,
+        viewport: Viewport,
         uiOverlay: Boolean,
         pausedBackground: Boolean,
     ) {
@@ -530,7 +526,7 @@ class SlickGameSession(
         activeGame()?.clearPendingViewInput()
     }
 
-    override fun adoptStartedGameFromEngine(viewport: GameViewport): Boolean {
+    override fun adoptStartedGameFromEngine(viewport: Viewport): Boolean {
         val mapPath = synchronized(gameLock) {
             val engine = activeEngineLocked() ?: return@synchronized null
             val networkEngine = engine.networkEngine ?: return@synchronized null
@@ -555,7 +551,7 @@ class SlickGameSession(
         return true
     }
 
-    override fun prepareMenuBackgroundAsync(viewport: GameViewport) {
+    override fun prepareMenuBackgroundAsync(viewport: Viewport) {
         if (requestState.desired is SlickSessionRequest.Replay) {
             return
         }
@@ -569,7 +565,7 @@ class SlickGameSession(
 
     override fun isMenuBackgroundActive(): Boolean = loadState.menuBackgroundActive
 
-    override fun prepareReplayAsync(replayName: String, viewport: GameViewport) {
+    override fun prepareReplayAsync(replayName: String, viewport: Viewport) {
         val requestedReplayName = replayName.takeIf { it.isNotBlank() } ?: return
         prepareRendererRequest(
             viewport,
@@ -580,7 +576,7 @@ class SlickGameSession(
     }
 
     private fun prepareRendererRequest(
-        viewport: GameViewport,
+        viewport: Viewport,
         request: SlickSessionRequest,
     ) {
         val requestedViewport = normalizedViewport(viewport)
@@ -600,9 +596,9 @@ class SlickGameSession(
         if (width <= 0 || height <= 0) return
         val device = SlickCanvasHost.gameCanvas()?.deviceSizeFor(width, height)
         lastSlickViewport = if (device != null) {
-            GameViewport(device.width, device.height)
+            Viewport(device.width, device.height)
         } else {
-            GameViewport(width, height)
+            Viewport(width, height)
         }
         lastViewport = lastSlickViewport
         val activeGame = activeGame()
@@ -740,7 +736,7 @@ class SlickGameSession(
         }
     }
 
-    private fun normalizedViewport(viewport: GameViewport): GameViewport {
+    private fun normalizedViewport(viewport: Viewport): Viewport {
         if (viewport.width > 0 && viewport.height > 0) {
             return viewport
         }
@@ -748,15 +744,15 @@ class SlickGameSession(
         val canvas = SlickCanvasHost.gameCanvas()
         if (canvas != null && logical != null) {
             val device = canvas.deviceSizeFor(logical.width, logical.height)
-            return GameViewport(device.width, device.height)
+            return Viewport(device.width, device.height)
         }
-        return GameViewport(
+        return Viewport(
             width = viewport.width.takeIf { it > 0 } ?: 1280,
             height = viewport.height.takeIf { it > 0 } ?: 720,
         )
     }
 
-    private fun slickGameLogicalSize(deviceViewport: GameViewport): Pair<Int, Int> {
+    private fun slickGameLogicalSize(deviceViewport: Viewport): Pair<Int, Int> {
         val logical = SlickCanvasHost.gameCanvasSize()?.takeIf { it.width > 0 && it.height > 0 }
         if (logical != null) {
             return logical.width to logical.height
@@ -790,6 +786,3 @@ private const val SLICK_ENGINE_START_POLL_MILLIS = 50L
 private fun deadlineAfterMillis(timeoutMillis: Long): Long =
     System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeoutMillis)
 
-
-private fun emptyFrameFor(viewport: GameViewport): GameFrame =
-    GameFrame(viewport, emptyList())

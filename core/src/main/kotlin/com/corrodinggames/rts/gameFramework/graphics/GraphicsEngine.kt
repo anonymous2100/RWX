@@ -2,7 +2,7 @@ package com.corrodinggames.rts.gameFramework.graphics
 
 import io.github.rwx.geometry.Rect
 import io.github.rwx.geometry.RectF
-import io.github.rwx.render.frame.GameCanvasBlendMode
+import io.github.rwx.render.canvas.CanvasBlendMode
 import io.github.rwx.render.canvas.Paint
 import java.io.File
 import java.io.InputStream
@@ -85,7 +85,7 @@ interface GraphicsEngine {
 
     fun b(i: Int)
 
-    fun a(i: Int, mode: GameCanvasBlendMode?)
+    fun a(i: Int, mode: CanvasBlendMode?)
 
     fun a(str: String?, f: Float, f2: Float, paint: Paint?, paint2: Paint?, f3: Float)
 

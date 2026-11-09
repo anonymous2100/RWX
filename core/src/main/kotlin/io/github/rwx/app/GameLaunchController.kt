@@ -2,7 +2,7 @@ package io.github.rwx.app
 
 import io.github.rwx.i18n.I18n
 import io.github.rwx.logger
-import io.github.rwx.render.frame.GameViewport
+import io.github.rwx.geometry.Viewport
 import io.github.rwx.session.BattleRoomLaunchConfig
 import io.github.rwx.session.GameSession
 import io.github.rwx.ui.AppScreen
@@ -14,16 +14,16 @@ import io.github.rwx.ui.model.ReplayEntry
 internal class GameLaunchController(
     private val gameSession: GameSession,
     private val battleRoomController: BattleRoomController,
-    private val warmupController: WarmupController,
+    private val startupPreparationController: StartupPreparationController,
     private val pendingStartController: PendingStartController,
     private val dialogSceneHost: DialogSceneHost,
-    private val viewport: () -> GameViewport,
+    private val viewport: () -> Viewport,
     private val currentScreen: () -> AppScreen,
     private val navigateTo: (AppScreen) -> Unit,
 ) {
     fun enterRwGame(startNew: Boolean = false, launchConfig: BattleRoomLaunchConfig? = null) {
         val mapPath = launchConfig?.room?.mapPath ?: battleRoomController.selectedOrDefaultMap()?.mapAssetPath
-        warmupController.clear()
+        startupPreparationController.clear()
         if (mapPath == null) {
             pendingStartController.clear()
             return
@@ -64,7 +64,7 @@ internal class GameLaunchController(
     }
 
     fun resumeRwGame() {
-        warmupController.clear()
+        startupPreparationController.clear()
         pendingStartController.clear()
         if (gameSession.canResume()) {
             navigateTo(AppScreen.InGame)
@@ -88,7 +88,7 @@ internal class GameLaunchController(
     }
 
     fun enterReplay(replay: ReplayEntry, startNew: Boolean = false) {
-        warmupController.clear()
+        startupPreparationController.clear()
         if (!startNew && gameSession.canResume()) {
             showStartNewGameDialog {
                 enterReplay(replay, startNew = true)
@@ -104,7 +104,7 @@ internal class GameLaunchController(
 
     fun enterSavedGame(saveName: String, startNew: Boolean = false) {
         val requestedSaveName = saveName.takeIf { it.isNotBlank() } ?: return
-        warmupController.clear()
+        startupPreparationController.clear()
         if (!startNew && gameSession.canResume()) {
             showStartNewGameDialog {
                 enterSavedGame(requestedSaveName, startNew = true)
